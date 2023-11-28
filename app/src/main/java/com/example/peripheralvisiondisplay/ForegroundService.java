@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -106,18 +107,19 @@ public class ForegroundService extends Service {
         }
     }
 
-    private void startService(){
+    private void startService() {
         if (!isServiceRunning) {
             NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelID)
-                .setContentTitle("Foreground Service")
-                .setContentText("Foreground service is running")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setOngoing(true);
+                    .setContentTitle("Foreground Service")
+                    .setContentText("Foreground service is running")
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setOngoing(true);
 
             Notification notification = notificationBuilder.build();
             startForeground(notificationID, notification);
             isServiceRunning = true;
+
         }
     }
 
@@ -129,20 +131,12 @@ public class ForegroundService extends Service {
         }
     }
 
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         isServiceRunning = false;
 //        stopForeground(true);
     }
-
-//    public void onTaskRemoved(Intent intent)
-//    {
-//        super.onTaskRemoved(intent);
-//        //add stuff when task removed
-//        this.stopSelf();
-//    }
 }
 
 

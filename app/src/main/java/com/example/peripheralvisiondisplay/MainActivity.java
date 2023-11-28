@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.Manifest;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -20,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button startServiceButton;
     Button stopServiceButton;
+    TextView statusText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +46,8 @@ public class MainActivity extends AppCompatActivity {
         else{
             startService(serviceIntent);
         }
-        isMyServiceRunning(ForegroundService.class);
+        updateTextView("Status: Service started");
+//        isMyServiceRunning(ForegroundService.class);
     }
 
     private void stopNotificationService()
@@ -53,15 +56,21 @@ public class MainActivity extends AppCompatActivity {
         Intent serviceIntent = new Intent(this, ForegroundService.class);
         serviceIntent.setAction(ForegroundService.STOP_ACTION);
         stopService(serviceIntent);
+        updateTextView("Status: Service stopped");
     }
 
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
+//    private boolean isMyServiceRunning(Class<?> serviceClass) {
+//        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+//        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+//            if (serviceClass.getName().equals(service.service.getClassName())) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+
+    private void updateTextView(String toThis) {
+        TextView textView = (TextView) findViewById(R.id.statusText);
+        textView.setText(toThis);
     }
 }

@@ -13,7 +13,8 @@
         android:text="Peripheral Vision Display"
         android:layout_gravity="center"
         android:textStyle="bold"
-        android:layout_marginTop="70dp"
+        android:textColor="@color/black"
+        android:layout_marginTop="40dp"
         android:textSize="80px"/>
 
     <!--start button-->
@@ -24,7 +25,7 @@
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:layout_gravity="center"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="40dp"
         android:text="Start Notification Service"
         android:textSize="50px" />
 
@@ -36,8 +37,19 @@
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:layout_gravity="center"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="40dp"
         android:text="Stop Notification Service"
         android:textSize="50px" />
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status:"
+        android:layout_gravity="left"
+        android:layout_marginLeft="40dp"
+        android:layout_marginTop="40dp"
+        android:textColor="@color/black"
+        android:textSize="65px"/>
 
 </LinearLayout>
