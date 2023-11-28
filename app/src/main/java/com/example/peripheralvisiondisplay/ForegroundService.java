@@ -10,6 +10,8 @@ import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.TextView;
+import android.service.notification.NotificationListenerService;
+import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -19,12 +21,6 @@ public class ForegroundService extends Service {
 
     final String channelID = "foregroundchannelid";
     final int notificationID = 1;
-
-//    Intent activityIntent = null;
-//    enum State
-//    {
-//        START, STOP
-//    }
 
     public static final String START_ACTION = "com.example.peripheralvisiondisplay.START_FOREGROUND_SERVICE";
     public static final String STOP_ACTION = "com.example.peripheralvisiondisplay.STOP_FOREGROUND_SERVICE";
@@ -47,46 +43,12 @@ public class ForegroundService extends Service {
                 startService();
             } else if (intent.getAction().equals(STOP_ACTION)) {
                 stopService();
+            } else if (intent.getAction().equals("com.example.peripheralvisiondisplay.NEW_NOTIFICATION")){
+                handleNewNotification(intent);
             }
         }
         return START_NOT_STICKY;
     }
-//        //service viewer in logcat
-//        new Thread(
-//                new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        while (true) {
-//                            Log.e("Service", "Service is running...");
-//                            try {
-//                                Thread.sleep(2000);
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//                    }
-//                }
-//        ).start();
-
-//        NotificationChannel channel;
-//        Notification.Builder notification = null;
-//
-//        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-//            channel = new NotificationChannel(channelID, channelID, NotificationManager.IMPORTANCE_HIGH);
-//
-////            getSystemService(NotificationManager.class).createNotificationChannel(channel);
-//            notification = new Notification.Builder(this, channelID)
-//            .setContentText("Service is running")
-//            .setContentTitle("Service enabled")
-//            .setSmallIcon(R.drawable.ic_launcher_background)
-//            .setOngoing(true)
-//            .setCategory(Notification.CATEGORY_NAVIGATION);
-//        }
-//        startForeground(notificationID, notification.build());
-//        //send heavy work to background thread
-////        return super.onStartCommand(intent, flags, startID);
-//        return START_STICKY;
-//    }
 
     @Nullable
     @Override
@@ -137,6 +99,37 @@ public class ForegroundService extends Service {
         isServiceRunning = false;
 //        stopForeground(true);
     }
+
+//    private void handleNewNotification(Intent intent) {
+//        // Retrieve notification data from the intent and process it
+//        String packageName = intent.getStringExtra("packageName");
+//        String notificationText = intent.getStringExtra("notificationText");
+//
+//        // Process and display the notification as needed
+//        // Example: Create a notification and display it using NotificationManager
+//    }
+
+    private void handleNewNotification(Intent intent) {
+        Log.d("ForegroundService", "handlenewnotification works");
+        // Retrieve notification data from the intent
+
+        String notificationText = intent.getStringExtra("notificationText");
+
+        // Update the notification content with the latest listened notification text
+        NotificationCompat.Builder notificationBuilder =
+                new NotificationCompat.Builder(this, channelID)
+                        .setContentTitle("Foreground Service")
+                        .setContentText(notificationText) // Set the latest notification text here
+                        .setSmallIcon(R.drawable.ic_launcher_background)
+                        .setPriority(NotificationCompat.PRIORITY_HIGH);
+
+        Notification notification = notificationBuilder.build();
+        notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
+
+        startForeground(notificationID, notification);
+    }
+
+
 }
 
 
