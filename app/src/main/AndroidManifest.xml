@@ -4,9 +4,12 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <application
+        android:name=".PeripheralVisionApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -37,17 +40,6 @@
             android:exported="false"
             android:label="@string/title_activity_maps" />
 
-<!--        <service-->
-<!--            android:name=".NotificationService"-->
-<!--            android:enabled="true"-->
-<!--            android:exported="false" />-->
-
-        <service
-            android:name=".ForegroundService"
-            android:enabled="true"
-            android:exported="false" />
-
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -59,6 +51,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".ForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:stopWithTask="true"
+            android:foregroundServiceType="location" />
+
     </application>
 
 </manifest>
