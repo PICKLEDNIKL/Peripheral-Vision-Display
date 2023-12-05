@@ -32,7 +32,6 @@ public class NotificationListener extends NotificationListenerService {
             //if tickettext is null
             Log.d("notificationlistener", "notification doesnt have tickertext");
         }
-
     }
 
     @Override

@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button startServiceButton;
     Button stopServiceButton;
+    Button switchToMapsActivityButton;
     TextView statusText;
 
     @Override
@@ -33,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
 
         stopServiceButton = findViewById(R.id.stopServiceButton);
         stopServiceButton.setOnClickListener(view -> stopNotificationService());
+
+        switchToMapsActivityButton = findViewById(R.id.switchToMapsActivityButton);
+        switchToMapsActivityButton.setOnClickListener(view -> switchToMapsActivity());
     }
 
     private void startNotificationService()
@@ -72,5 +76,11 @@ public class MainActivity extends AppCompatActivity {
     private void updateTextView(String toThis) {
         TextView textView = (TextView) findViewById(R.id.statusText);
         textView.setText(toThis);
+    }
+
+    private void switchToMapsActivity()
+    {
+        Intent intent = new Intent(this, MapsActivity.class);
+        startActivity(intent);
     }
 }

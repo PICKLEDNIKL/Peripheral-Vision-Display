@@ -1,9 +1,22 @@
 package com.example.peripheralvisiondisplay;
 
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Bundle;
+import android.widget.Toast;
+
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -16,6 +29,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
+    private FusedLocationProviderClient fusedLocationProviderClient;
+
+    private static final int REQUEST_LOCATION_PERMISSION = 1001;
+
+    EditText destinationEditText;
+    Button searchButton;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +48,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+
+        destinationEditText = findViewById(R.id.destinationEditText);
+        searchButton = findViewById(R.id.searchButton);
+        searchButton.setOnClickListener(view -> searchForDestination());
     }
 
     /**
@@ -43,9 +69,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        // check location permissions
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+        {
+            fusedLocationProviderClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    if (location != null) {
+                        double currentLatitude = location.getLatitude();
+                        double currentLongitude = location.getLongitude();
+
+                        // marker for current location
+                        LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
+                        mMap.addMarker(new MarkerOptions().position(currentLatLng)
+                                .title("Your Location"));
+
+                        // Move the camera to the user's current location
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
+
+                    } else {
+                        // Handle location is null
+                        Toast.makeText(this, "Unable to retrieve current location", Toast.LENGTH_SHORT).show();
+                    }
+                });
+        } else {
+            // Handle location permission denied
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+            Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void searchForDestination() {
+        String destination = destinationEditText.getText().toString();
     }
 }
