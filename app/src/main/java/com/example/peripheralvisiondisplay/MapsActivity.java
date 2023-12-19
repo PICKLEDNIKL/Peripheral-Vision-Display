@@ -4,7 +4,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -35,6 +37,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     EditText destinationEditText;
     Button searchButton;
+
+    double currentLatitude;
+    double currentLongitude;
 
 
     @Override
@@ -75,16 +80,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             fusedLocationProviderClient.getLastLocation()
                 .addOnSuccessListener(this, location -> {
                     if (location != null) {
-                        double currentLatitude = location.getLatitude();
-                        double currentLongitude = location.getLongitude();
+                        currentLatitude = location.getLatitude();
+                        currentLongitude = location.getLongitude();
+
+                        Log.i("mapsactivity", currentLatitude + " " + currentLongitude);
+
 
                         // marker for current location
                         LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
                         mMap.addMarker(new MarkerOptions().position(currentLatLng)
-                                .title("Your Location"));
+                                .title("Current Location"));
 
                         // Move the camera to the user's current location
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
+
 
                     } else {
                         // Handle location is null
@@ -100,5 +109,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void searchForDestination() {
         String destination = destinationEditText.getText().toString();
+
+        // Construct the URL for the Google Maps Directions API
+        String apikey = BuildConfig.apiKey;
+        Log.i("eas", "searchForDestination: API_KEY = " + apikey);
+        String url = "https://maps.googleapis.com/maps/api/directions/json" +
+//                "?destination=" + destination +
+                "?destination=" + "51.411624908447266" + "," + "-0.12337013334035873" +
+                "&origin=" + currentLatitude + "," + currentLongitude +
+                "&key=" + apikey;
+
+        // Execute the AsyncTask to perform the API request
+        new DirectionsTask(mMap).execute(url);
     }
 }
