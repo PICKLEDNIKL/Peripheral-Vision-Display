@@ -17,15 +17,30 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationResult;
 import com.example.peripheralvisiondisplay.databinding.ActivityMapsBinding;
+
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.model.PlaceLikelihood;
+import com.google.android.libraries.places.api.model.RectangularBounds;
+import com.google.android.libraries.places.api.net.PlacesClient;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
+
+import java.util.Arrays;
+
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -41,6 +56,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     double currentLatitude;
     double currentLongitude;
 
+    private LatLng selectedPlace;
+    private String apikey = BuildConfig.apiKey;
+
+    private AutocompleteSupportFragment autocompleteFragment;
+
+    private boolean isCameraMoved = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,50 +77,48 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
-        destinationEditText = findViewById(R.id.destinationEditText);
+//        destinationEditText = findViewById(R.id.destinationEditText);
         searchButton = findViewById(R.id.searchButton);
         searchButton.setOnClickListener(view -> searchForDestination());
+
+        // Initialize the SDK
+        Places.initialize(getApplicationContext(), apikey);
+
+        // Create a new Places client instance
+        PlacesClient placesClient = Places.createClient(this);
+
+        // Initialize the AutocompleteSupportFragment
+        autocompleteFragment = (AutocompleteSupportFragment)
+                getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+
+
+        autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG));
+        autocompleteFragment.setCountry("UK");
+
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                // Handle the selected Place
+                selectedPlace = place.getLatLng();
+                Log.i("onplaceselect", "Place: " + place.getName() + ", " + place.getId());
+            }
+
+            @Override
+            public void onError(Status status) {
+                // Handle the error
+                Log.i("onerror", "An error occurred: " + status);
+            }
+        });
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
         // check location permissions
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        {
-            fusedLocationProviderClient.getLastLocation()
-                .addOnSuccessListener(this, location -> {
-                    if (location != null) {
-                        currentLatitude = location.getLatitude();
-                        currentLongitude = location.getLongitude();
-
-                        Log.i("mapsactivity", currentLatitude + " " + currentLongitude);
-
-
-                        // marker for current location
-                        LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
-                        mMap.addMarker(new MarkerOptions().position(currentLatLng)
-                                .title("Current Location"));
-
-                        // Move the camera to the user's current location
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
-
-
-                    } else {
-                        // Handle location is null
-                        Toast.makeText(this, "Unable to retrieve current location", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            LocationRequest locationRequest = createLocationRequest();
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
         } else {
             // Handle location permission denied
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
@@ -107,15 +126,69 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+    }
+
+
+    private LocationRequest createLocationRequest() {
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setInterval(10000); // Set the desired interval for active location updates, in milliseconds.
+        locationRequest.setFastestInterval(5000); // Set the fastest rate for active location updates, in milliseconds.
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Set the priority of the request.
+        return locationRequest;
+    }
+
+    private LocationCallback locationCallback = new LocationCallback() {
+        @Override
+        public void onLocationResult(LocationResult locationResult) {
+            if (locationResult == null) {
+                return;
+            }
+            for (Location location : locationResult.getLocations()) {
+                // Update UI with location data
+                currentLatitude = location.getLatitude();
+                currentLongitude = location.getLongitude();
+            }
+
+            mMap.clear();
+
+            LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
+            mMap.addMarker(new MarkerOptions().position(currentLatLng)
+                    .title("Current Location"));
+
+            if (!isCameraMoved) {
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
+                isCameraMoved = true;
+            }
+
+
+            double biasDistance = 0.01; // This is the distance from the center to the edges of the rectangle in degrees. Adjust as needed.
+            LatLng southwest = new LatLng(currentLatitude - biasDistance, currentLongitude - biasDistance);
+            LatLng northeast = new LatLng(currentLatitude + biasDistance, currentLongitude + biasDistance);
+            RectangularBounds bounds = RectangularBounds.newInstance(southwest, northeast);
+            autocompleteFragment.setLocationBias(bounds);
+            Log.i("bounds", "onCreate: " + bounds.toString());
+
+            Log.i("TAG", "onLocationResult: " + currentLatitude + " " + currentLongitude);
+        }
+    };
+
     private void searchForDestination() {
-        String destination = destinationEditText.getText().toString();
+        if (selectedPlace == null) {
+            Toast.makeText(this, "Please select a place first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+//        String destination = destinationEditText.getText().toString();
 
         // Construct the URL for the Google Maps Directions API
-        String apikey = BuildConfig.apiKey;
         Log.i("eas", "searchForDestination: API_KEY = " + apikey);
         String url = "https://maps.googleapis.com/maps/api/directions/json" +
-//                "?destination=" + destination +
-                "?destination=" + "51.411624908447266" + "," + "-0.12337013334035873" +
+                "?destination=" + selectedPlace.latitude + "," + selectedPlace.longitude +
+//                "?destination=" + "51.411624908447266" + "," + "-0.12337013334035873" +
                 "&origin=" + currentLatitude + "," + currentLongitude +
                 "&key=" + apikey;
 
