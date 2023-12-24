@@ -119,6 +119,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             LocationRequest locationRequest = createLocationRequest();
             fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
+            if (isCameraMoved == false)
+            {
+                Toast.makeText(this, "Retrieving current location", Toast.LENGTH_SHORT).show();
+            }
         } else {
             // Handle location permission denied
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
@@ -135,8 +139,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private LocationRequest createLocationRequest() {
         LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(10000); // Set the desired interval for active location updates, in milliseconds.
-        locationRequest.setFastestInterval(5000); // Set the fastest rate for active location updates, in milliseconds.
+
+        locationRequest.setInterval(6000); // Set the desired interval for active location updates, in milliseconds.
+        locationRequest.setFastestInterval(3000); // Set the fastest rate for active location updates, in milliseconds.
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Set the priority of the request.
         return locationRequest;
     }
@@ -164,7 +169,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 isCameraMoved = true;
             }
 
-
             double biasDistance = 0.01; // This is the distance from the center to the edges of the rectangle in degrees. Adjust as needed.
             LatLng southwest = new LatLng(currentLatitude - biasDistance, currentLongitude - biasDistance);
             LatLng northeast = new LatLng(currentLatitude + biasDistance, currentLongitude + biasDistance);
@@ -188,7 +192,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.i("eas", "searchForDestination: API_KEY = " + apikey);
         String url = "https://maps.googleapis.com/maps/api/directions/json" +
                 "?destination=" + selectedPlace.latitude + "," + selectedPlace.longitude +
-//                "?destination=" + "51.411624908447266" + "," + "-0.12337013334035873" +
+                "&mode=walking" +
                 "&origin=" + currentLatitude + "," + currentLongitude +
                 "&key=" + apikey;
 

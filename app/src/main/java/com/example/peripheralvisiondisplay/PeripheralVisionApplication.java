@@ -33,26 +33,4 @@ public class PeripheralVisionApplication extends Application {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
-
-//    // Check if the user granted permission to access notifications
-//    @Override
-//    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        super.onActivityResult(requestCode, resultCode, data);
-//        if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
-//            if (isNotificationServiceEnabled()) {
-//                // Permission has been granted
-//                // Perform necessary operations here
-//            } else {
-//                // Permission denied by the user
-//                // Handle accordingly or request permission again
-//            }
-//        }
-//    }
-
-//    // Check if the notification listener service is enabled
-//    public boolean isNotificationServiceEnabled() {
-//        String pkgName = getPackageName();
-//        final String flat = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
-//        return flat != null && flat.contains(pkgName);
-//    }
 }
