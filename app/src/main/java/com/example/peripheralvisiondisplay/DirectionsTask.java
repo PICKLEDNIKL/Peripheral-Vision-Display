@@ -71,6 +71,31 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                 JSONArray routes = jsonObject.getJSONArray("routes");
                 JSONObject route = routes.getJSONObject(0); // Take the first route
 
+                // Get the legs of the route
+                JSONArray legs = route.getJSONArray("legs");
+                for (int i = 0; i < legs.length(); i++) {
+                    JSONObject leg = legs.getJSONObject(i);
+
+                    // Get the steps of the leg
+                    JSONArray steps = leg.getJSONArray("steps");
+                    for (int j = 0; j < steps.length(); j++) {
+                        JSONObject step = steps.getJSONObject(j);
+
+                        // Get the start and end location of the step
+                        JSONObject startLocation = step.getJSONObject("start_location");
+                        JSONObject endLocation = step.getJSONObject("end_location");
+
+                        // Get the text instruction for the step
+                        String instruction = step.getString("html_instructions");
+
+                        // Get the distance and duration of the step
+                        JSONObject distance = step.getJSONObject("distance");
+                        JSONObject duration = step.getJSONObject("duration");
+
+                        // TODO: Use this information to implement turn-by-turn navigation
+                    }
+                }
+
                 JSONObject overviewPolyline = route.getJSONObject("overview_polyline");
                 String encodedPolyline = overviewPolyline.getString("points");
 

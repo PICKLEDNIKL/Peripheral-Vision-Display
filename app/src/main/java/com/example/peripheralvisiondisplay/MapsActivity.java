@@ -3,7 +3,11 @@ package com.example.peripheralvisiondisplay;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,6 +20,10 @@ import android.location.Location;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -25,6 +33,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.LocationCallback;
@@ -42,7 +51,7 @@ import com.google.android.libraries.places.widget.listener.PlaceSelectionListene
 import java.util.Arrays;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener {
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
@@ -62,6 +71,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private AutocompleteSupportFragment autocompleteFragment;
 
     private boolean isCameraMoved = false;
+
+
+    //just added
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private Sensor magnetometer;
+    private float[] lastAccelerometer = new float[3];
+    private float[] lastMagnetometer = new float[3];
+    private boolean isAccelerometerSet = false;
+    private boolean isMagnetometerSet = false;
+    private float[] rotationMatrix = new float[9];
+    private float[] orientation = new float[3];
+
+    private static final float ALPHA = 0.20f; // if ALPHA = 1 OR 0, no filter applies.
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,6 +133,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.i("onerror", "An error occurred: " + status);
             }
         });
+
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
     }
 
     @Override
@@ -131,9 +159,60 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+        sensorManager.unregisterListener(this);
+    }
+
+
+    private float[] lowPassFilter( float input[], float output[] ) {
+        if ( output == null ) return input;
+
+        for ( int i=0; i<input.length; i++ ) {
+            output[i] = output[i] + ALPHA * (input[i] - output[i]);
+        }
+        return output;
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor == accelerometer) {
+            lastAccelerometer = lowPassFilter(event.values.clone(), lastAccelerometer);
+            isAccelerometerSet = true;
+        } else if (event.sensor == magnetometer) {
+            lastMagnetometer = lowPassFilter(event.values.clone(), lastMagnetometer);
+            isMagnetometerSet = true;
+        }
+
+        if (isAccelerometerSet && isMagnetometerSet) {
+            SensorManager.getRotationMatrix(rotationMatrix, null, lastAccelerometer, lastMagnetometer);
+            SensorManager.getOrientation(rotationMatrix, orientation);
+            float azimuthInRadians = orientation[0];
+            float azimuthInDegrees = (float)(Math.toDegrees(azimuthInRadians)+360)%360;
+
+            // Update the camera position to match the device's orientation
+            if (mMap != null) {
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(mMap.getCameraPosition().target) // keep the current target
+                        .zoom(mMap.getCameraPosition().zoom) // keep the current zoom
+                        .bearing(azimuthInDegrees) // update the bearing to match the device's orientation
+                        .build();
+                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Handle changes in sensor accuracy
     }
 
 
