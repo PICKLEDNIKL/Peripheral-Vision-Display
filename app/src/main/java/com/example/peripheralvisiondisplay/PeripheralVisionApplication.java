@@ -1,8 +1,10 @@
 package com.example.peripheralvisiondisplay;
 
+import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
@@ -23,14 +25,5 @@ public class PeripheralVisionApplication extends Application {
 
     public void onCreate() {
         super.onCreate();
-        //add global application initialisation code here
-        requestpermissions();
-//        isNotificationServiceEnabled();
-    }
-
-    private void requestpermissions(){
-        Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
     }
 }

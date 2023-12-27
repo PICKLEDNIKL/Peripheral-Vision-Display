@@ -71,6 +71,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private AutocompleteSupportFragment autocompleteFragment;
 
     private boolean isCameraMoved = false;
+//    private boolean isFirstLocationUpdate = true;
 
 
     //just added
@@ -139,6 +140,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
     }
 
+//    @Override
+//    public void onMapReady(GoogleMap googleMap) {
+//        mMap = googleMap;
+//
+//        // check location permissions
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+//            LocationRequest locationRequest = createLocationRequest();
+//            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
+//            if (isCameraMoved == false)
+//            {
+//                Toast.makeText(this, "Retrieving current location", Toast.LENGTH_SHORT).show();
+//            }
+//        } else {
+//            // Handle location permission denied
+//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+//            Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
+//        }
+//    }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -153,8 +173,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         } else {
             // Handle location permission denied
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
-            Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
+//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+            Toast.makeText(this, "Location permission denied. Please grant location permission to use the map.", Toast.LENGTH_SHORT).show();
+            // Disable the map until the permission is granted
+            mMap.getUiSettings().setAllGesturesEnabled(false);
         }
     }
 
