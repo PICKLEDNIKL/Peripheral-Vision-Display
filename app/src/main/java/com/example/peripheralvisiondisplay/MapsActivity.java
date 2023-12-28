@@ -171,6 +171,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             {
                 Toast.makeText(this, "Retrieving current location", Toast.LENGTH_SHORT).show();
             }
+            mMap.getUiSettings().setAllGesturesEnabled(true);
+            mMap.getUiSettings().setMapToolbarEnabled(true);
+            mMap.setMyLocationEnabled(true);
         } else {
             // Handle location permission denied
 //            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
@@ -237,7 +240,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Handle changes in sensor accuracy
     }
 
-
     private LocationRequest createLocationRequest() {
         LocationRequest locationRequest = LocationRequest.create();
 
@@ -262,13 +264,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.clear();
 
             LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
-            mMap.addMarker(new MarkerOptions().position(currentLatLng)
-                    .title("Current Location"));
+//            mMap.addMarker(new MarkerOptions().position(currentLatLng)
+//                    .title("Current Location"));
 
             if (!isCameraMoved) {
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
                 isCameraMoved = true;
             }
+
+
 
             double biasDistance = 0.01; // This is the distance from the center to the edges of the rectangle in degrees. Adjust as needed.
             LatLng southwest = new LatLng(currentLatitude - biasDistance, currentLongitude - biasDistance);
