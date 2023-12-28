@@ -48,7 +48,15 @@
         </activity>
 
         <service
-            android:name=".ForegroundService"
+            android:name=".NotificationForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:stopWithTask="true"
+            android:foregroundServiceType="specialUse"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"/>
+
+        <service
+            android:name=".LocationForegroundService"
             android:enabled="true"
             android:exported="false"
             android:stopWithTask="true"

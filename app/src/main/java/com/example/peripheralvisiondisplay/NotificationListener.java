@@ -21,7 +21,7 @@ public class NotificationListener extends NotificationListenerService {
             String notificationText = sbn.getNotification().tickerText.toString();
             // Pass the notification data to your foreground service using Intent or other means
             // For example:
-            Intent serviceIntent = new Intent(this, ForegroundService.class);
+            Intent serviceIntent = new Intent(this, NotificationForegroundService.class);
             serviceIntent.setAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
             serviceIntent.putExtra("packageName", packageName);
             serviceIntent.putExtra("notificationText", notificationText);

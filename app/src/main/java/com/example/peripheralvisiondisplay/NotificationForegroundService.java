@@ -3,23 +3,19 @@ package com.example.peripheralvisiondisplay;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.TextView;
-import android.service.notification.NotificationListenerService;
-import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
-public class ForegroundService extends Service {
+public class NotificationForegroundService extends Service {
 
-    final String channelID = "foregroundchannelid";
+    final String channelID = "notificationforegroundchannelid";
     final int notificationID = 1;
 
     public static final String START_ACTION = "com.example.peripheralvisiondisplay.START_FOREGROUND_SERVICE";

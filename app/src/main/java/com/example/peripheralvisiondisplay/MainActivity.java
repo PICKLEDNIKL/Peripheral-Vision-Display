@@ -27,12 +27,15 @@ import androidx.core.content.ContextCompat;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button startServiceButton;
-    Button stopServiceButton;
+    Button notificationServiceButton;
+    Button locationServiceButton;
+//    Button stopServiceButton;
     Button switchToMapsActivityButton;
-    TextView statusText;
+//    TextView statusText;
     private static final int REQUEST_LOCATION_PERMISSION = 1001;
     int locationPermissionCount = 0;
+    boolean toggleNotificationService = false;
+    boolean toggleLocationService = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,42 +60,66 @@ public class MainActivity extends AppCompatActivity {
                     .show();
         }
 
-        startServiceButton = findViewById(R.id.startServiceButton);
-        startServiceButton.setOnClickListener(view -> startNotificationService());
 
-        stopServiceButton = findViewById(R.id.stopServiceButton);
-        stopServiceButton.setOnClickListener(view -> stopNotificationService());
+        notificationServiceButton = findViewById(R.id.notificationServiceButton);
+        notificationServiceButton.setOnClickListener(view -> toggleNotificationService());
+
+        locationServiceButton = findViewById(R.id.locationServiceButton);
+        locationServiceButton.setOnClickListener(view -> toggleLocationService());
 
         switchToMapsActivityButton = findViewById(R.id.switchToMapsActivityButton);
         switchToMapsActivityButton.setOnClickListener(view -> switchToMapsActivity());
     }
 
-    private void startNotificationService()
+    private void toggleNotificationService()
     {
-        Log.d("functionstarted", "service starts");
-        Intent serviceIntent = new Intent(this, ForegroundService.class);
-        serviceIntent.setAction(ForegroundService.START_ACTION);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent);
+        if (!toggleNotificationService) {
+
+            Log.d("functionstarted", "service starts");
+            Intent notificationserviceIntent = new Intent(this, NotificationForegroundService.class);
+            notificationserviceIntent.setAction(NotificationForegroundService.START_ACTION);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(notificationserviceIntent);
+            } else {
+                startService(notificationserviceIntent);
+            }
+//            updateTextView("Status: Service started");
+            notificationServiceButton.setText("Stop Notification Service");
+            toggleNotificationService = true;
         }
-        else{
-            startService(serviceIntent);
+        else
+        {
+            Log.d("functionstarted","service stops");
+            Intent notificationserviceIntent = new Intent(this, NotificationForegroundService.class);
+            notificationserviceIntent.setAction(NotificationForegroundService.STOP_ACTION);
+            stopService(notificationserviceIntent);
+//            updateTextView("Status: Service stopped");
+            notificationServiceButton.setText("Start Notification Service");
+            toggleNotificationService = false;
         }
-        updateTextView("Status: Service started");
     }
 
-    private void stopNotificationService()
+    private void toggleLocationService()
     {
-        Log.d("functionstarted","service stops");
-        Intent serviceIntent = new Intent(this, ForegroundService.class);
-        serviceIntent.setAction(ForegroundService.STOP_ACTION);
-        stopService(serviceIntent);
-        updateTextView("Status: Service stopped");
-    }
-
-    private void updateTextView(String toThis) {
-        TextView textView = (TextView) findViewById(R.id.statusText);
-        textView.setText(toThis);
+        if (!toggleLocationService) {
+            Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
+            locationserviceIntent.setAction(LocationForegroundService.START_ACTION);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(locationserviceIntent);
+            } else {
+                startService(locationserviceIntent);
+            }
+            locationServiceButton.setText("Stop Location Service");
+            toggleLocationService = true;
+        }
+        else
+        {
+            Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
+            locationserviceIntent.setAction(LocationForegroundService.STOP_ACTION);
+            stopService(locationserviceIntent);
+            locationServiceButton.setText("Start Location Service");
+            toggleLocationService = false;
+        }
     }
 
     private void switchToMapsActivity()
