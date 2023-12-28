@@ -140,25 +140,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
     }
 
-//    @Override
-//    public void onMapReady(GoogleMap googleMap) {
-//        mMap = googleMap;
-//
-//        // check location permissions
-//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-//            LocationRequest locationRequest = createLocationRequest();
-//            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
-//            if (isCameraMoved == false)
-//            {
-//                Toast.makeText(this, "Retrieving current location", Toast.LENGTH_SHORT).show();
-//            }
-//        } else {
-//            // Handle location permission denied
-//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
-//            Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
-//        }
-//    }
-
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -171,9 +152,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             {
                 Toast.makeText(this, "Retrieving current location", Toast.LENGTH_SHORT).show();
             }
+//            locationCallback.onLocationResult(null);
             mMap.getUiSettings().setAllGesturesEnabled(true);
             mMap.getUiSettings().setMapToolbarEnabled(true);
             mMap.setMyLocationEnabled(true);
+            mMap.getUiSettings().setMyLocationButtonEnabled(true);
         } else {
             // Handle location permission denied
 //            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
@@ -223,15 +206,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             float azimuthInRadians = orientation[0];
             float azimuthInDegrees = (float)(Math.toDegrees(azimuthInRadians)+360)%360;
 
-            // Update the camera position to match the device's orientation
-            if (mMap != null) {
-                CameraPosition cameraPosition = new CameraPosition.Builder()
-                        .target(mMap.getCameraPosition().target) // keep the current target
-                        .zoom(mMap.getCameraPosition().zoom) // keep the current zoom
-                        .bearing(azimuthInDegrees) // update the bearing to match the device's orientation
-                        .build();
-                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-            }
+                                                                                                //add this back in if you want the map to rotate
+//            // Update the camera position to match the device's orientation
+//            if (mMap != null) {
+//                CameraPosition cameraPosition = new CameraPosition.Builder()
+//                        .target(mMap.getCameraPosition().target) // keep the current target
+//                        .zoom(mMap.getCameraPosition().zoom) // keep the current zoom
+//                        .bearing(azimuthInDegrees) // update the bearing to match the device's orientation
+//                        .build();
+//                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+//            }
         }
     }
 
@@ -271,8 +255,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
                 isCameraMoved = true;
             }
-
-
 
             double biasDistance = 0.01; // This is the distance from the center to the edges of the rectangle in degrees. Adjust as needed.
             LatLng southwest = new LatLng(currentLatitude - biasDistance, currentLongitude - biasDistance);
