@@ -96,14 +96,12 @@ public class NotificationForegroundService extends Service {
 //        stopForeground(true);
     }
 
-//    private void handleNewNotification(Intent intent) {
-//        // Retrieve notification data from the intent and process it
-//        String packageName = intent.getStringExtra("packageName");
-//        String notificationText = intent.getStringExtra("notificationText");
-//
-//        // Process and display the notification as needed
-//        // Example: Create a notification and display it using NotificationManager
-//    }
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        // Stop the service when the app is swiped off from the recent apps list
+        stopService();
+    }
 
     private void handleNewNotification(Intent intent) {
         Log.d("ForegroundService", "handlenewnotification works");

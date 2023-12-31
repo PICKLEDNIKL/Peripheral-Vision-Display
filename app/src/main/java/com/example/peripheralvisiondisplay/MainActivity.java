@@ -10,6 +10,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.LocationRequest;
 import android.net.Uri;
@@ -86,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         }
         else
         {
+            //start service
             if (!toggleNotificationService) {
 
                 Log.d("functionstarted", "service starts");
@@ -96,19 +99,29 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     startService(notificationserviceIntent);
                 }
-//            updateTextView("Status: Service started");
                 notificationServiceButton.setText("Stop Notification Service");
                 toggleNotificationService = true;
+
+                SharedPreferences sharedPref = getSharedPreferences("NotificationPreferences", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean("isButtonOn", true);
+                editor.apply();
             }
+            //stop service
             else
             {
                 Log.d("functionstarted","service stops");
                 Intent notificationserviceIntent = new Intent(this, NotificationForegroundService.class);
                 notificationserviceIntent.setAction(NotificationForegroundService.STOP_ACTION);
                 stopService(notificationserviceIntent);
-//            updateTextView("Status: Service stopped");
+
                 notificationServiceButton.setText("Start Notification Service");
                 toggleNotificationService = false;
+
+                SharedPreferences sharedPref = getSharedPreferences("NotificationPreferences", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean("isButtonOn", false);
+                editor.apply();
             }
         }
     }
@@ -206,5 +219,16 @@ public class MainActivity extends AppCompatActivity {
         {
             Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // The app is being destroyed
+        // Change the shared preference to indicate that the service is off
+        SharedPreferences sharedPref = getSharedPreferences("NotificationPreferences", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putBoolean("isButtonOn", false);
+        editor.apply();
     }
 }

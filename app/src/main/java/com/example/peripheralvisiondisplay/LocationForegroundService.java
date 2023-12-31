@@ -137,6 +137,13 @@ public class LocationForegroundService extends Service {
         isServiceRunning = false;
     }
 
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        // Stop the service when the app is swiped off from the recent apps list
+        stopService();
+    }
+
     private void handleNewNotification(Intent intent) {
         Log.d("ForegroundService", "handlenewnotification works");
         // Retrieve notification data from the intent
