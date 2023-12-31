@@ -29,6 +29,7 @@ import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.Priority;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -225,11 +226,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private LocationRequest createLocationRequest() {
-        LocationRequest locationRequest = LocationRequest.create();
 
-        locationRequest.setInterval(6000); // Set the desired interval for active location updates, in milliseconds.
-        locationRequest.setFastestInterval(3000); // Set the fastest rate for active location updates, in milliseconds.
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Set the priority of the request.
+        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+                .setWaitForAccurateLocation(true)
+                .setMinUpdateIntervalMillis(500)
+                .setMaxUpdateDelayMillis(1000)
+                .build();
+
         return locationRequest;
     }
 

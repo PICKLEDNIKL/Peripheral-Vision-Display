@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.location.LocationRequest.Builder;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -23,6 +24,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 
 public class LocationForegroundService extends Service {
 
@@ -108,10 +110,11 @@ public class LocationForegroundService extends Service {
             startForeground(notificationID, notification);
             isServiceRunning = true;
 
-            LocationRequest locationRequest = LocationRequest.create();
-            locationRequest.setInterval(10000); // Set the desired interval for active location updates, in milliseconds.
-            locationRequest.setFastestInterval(5000); // Set the fastest rate for active location updates, in milliseconds.
-            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); // Set the priority of the request.
+            LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+                    .setWaitForAccurateLocation(true)
+                    .setMinUpdateIntervalMillis(500)
+                    .setMaxUpdateDelayMillis(1000)
+                    .build();
 
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
