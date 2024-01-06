@@ -13,6 +13,14 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.UUID;
+
 public class NotificationForegroundService extends Service {
 
     final String channelID = "notificationforegroundchannelid";
@@ -22,6 +30,9 @@ public class NotificationForegroundService extends Service {
     public static final String STOP_ACTION = "com.example.peripheralvisiondisplay.STOP_FOREGROUND_SERVICE";
 
     private boolean isServiceRunning = false;
+
+
+
 
     @Override
     public void onCreate() {

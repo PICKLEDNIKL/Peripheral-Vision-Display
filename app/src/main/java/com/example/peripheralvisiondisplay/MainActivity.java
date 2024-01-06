@@ -7,6 +7,8 @@ import android.app.AppOpsManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -36,9 +38,9 @@ public class MainActivity extends AppCompatActivity {
 
     Button notificationServiceButton;
     Button locationServiceButton;
-//    Button stopServiceButton;
+    //    Button stopServiceButton;
     Button switchToMapsActivityButton;
-//    TextView statusText;
+    //    TextView statusText;
     private static final int REQUEST_LOCATION_PERMISSION = 1001;
     int locationPermissionCount = 0;
     boolean toggleNotificationService = false;
@@ -57,6 +59,28 @@ public class MainActivity extends AppCompatActivity {
 
         switchToMapsActivityButton = findViewById(R.id.switchToMapsActivityButton);
         switchToMapsActivityButton.setOnClickListener(view -> switchToMapsActivity());
+
+        BluetoothManager bluetoothManager = getSystemService(BluetoothManager.class);
+        BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+        if (bluetoothAdapter == null) {
+            Toast.makeText(this, "This device doesn't support bluetooth", Toast.LENGTH_SHORT).show();
+        }
+
+        // probably needs changing
+        if (!bluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            startActivity(enableBtIntent);
+        }
+
+//        if (!bluetoothAdapter.isEnabled()) {
+//            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+//            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+//        }
+
+
     }
 
     private void toggleNotificationService()
@@ -128,7 +152,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void toggleLocationService()
     {
-
         Context context = getApplicationContext();
         AppOpsManager appOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
         int mode = appOpsManager.checkOpNoThrow(AppOpsManager.OPSTR_FINE_LOCATION, Process.myUid(), context.getPackageName());
@@ -157,7 +180,9 @@ public class MainActivity extends AppCompatActivity {
             stopService(locationserviceIntent);
             locationServiceButton.setText("Start Location Service");
             toggleLocationService = false;
-        }else
+
+        }
+        else
         {
             if (!toggleLocationService) {
                 Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
@@ -169,6 +194,12 @@ public class MainActivity extends AppCompatActivity {
                 }
                 locationServiceButton.setText("Stop Location Service");
                 toggleLocationService = true;
+
+                SharedPreferences sharedPref = getSharedPreferences("LocationPreferences", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean("isButtonOn", true);
+                editor.apply();
+
             }
             else
             {
@@ -177,40 +208,17 @@ public class MainActivity extends AppCompatActivity {
                 stopService(locationserviceIntent);
                 locationServiceButton.setText("Start Location Service");
                 toggleLocationService = false;
+
+                SharedPreferences sharedPref = getSharedPreferences("LocationPreferences", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean("isButtonOn", false);
+                editor.apply();
             }
         }
     }
 
     private void switchToMapsActivity()
     {
-//        if (locationPermissionCount < 2) {
-//            // Check if location permission is granted
-//            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
-//                locationPermissionCount++;
-//            }
-//        }else
-//        {
-//            // Check if location permission is granted
-//            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//                // Show dialog to explain why the app needs the permission
-//                new AlertDialog.Builder(this)
-//                        .setTitle("Location Permission")
-//                        .setMessage("This app requires access to your location to work properly.")
-//                        .setPositiveButton("Allow", new DialogInterface.OnClickListener() {
-//                            public void onClick(DialogInterface dialog, int which) {
-//                                // Redirect to application settings
-//                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-//                                Uri uri = Uri.fromParts("package", getPackageName(), null);
-//                                intent.setData(uri);
-//                                startActivity(intent);
-//                            }
-//                        })
-//                        .setNegativeButton("Cancel", null)
-//                        .show();
-//            }
-//        }
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             Intent intent = new Intent(this, MapsActivity.class);
             startActivity(intent);
@@ -224,11 +232,19 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // The app is being destroyed
-        // Change the shared preference to indicate that the service is off
+
         SharedPreferences sharedPref = getSharedPreferences("NotificationPreferences", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putBoolean("isButtonOn", false);
         editor.apply();
+
+        sharedPref = getSharedPreferences("LocationPreferences", Context.MODE_PRIVATE);
+        editor = sharedPref.edit();
+        editor.putBoolean("isButtonOn", false);
+        editor.apply();
+
+        Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
+        locationserviceIntent.setAction(LocationForegroundService.STOP_ACTION);
+        stopService(locationserviceIntent);
     }
 }
