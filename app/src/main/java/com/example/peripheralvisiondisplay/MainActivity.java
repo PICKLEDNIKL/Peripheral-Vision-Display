@@ -1,6 +1,7 @@
 package com.example.peripheralvisiondisplay;
 
 import android.accessibilityservice.AccessibilityService;
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
@@ -9,6 +10,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -45,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     int locationPermissionCount = 0;
     boolean toggleNotificationService = false;
     boolean toggleLocationService = false;
+    private static final int REQUEST_ENABLE_BT = 1;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,25 +66,44 @@ public class MainActivity extends AppCompatActivity {
 
         BluetoothManager bluetoothManager = getSystemService(BluetoothManager.class);
         BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+
         if (bluetoothAdapter == null) {
             Toast.makeText(this, "This device doesn't support bluetooth", Toast.LENGTH_SHORT).show();
         }
 
-        // probably needs changing
         if (!bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                return;
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, 1);
             }
-            startActivity(enableBtIntent);
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
 
-//        if (!bluetoothAdapter.isEnabled()) {
-//            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-//        }
-
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        registerReceiver(bluetoothStateReceiver, filter);
     }
+
+    private final BroadcastReceiver bluetoothStateReceiver = new BroadcastReceiver() {
+        @SuppressLint("MissingPermission")
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+
+            if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+                switch (state) {
+                    case BluetoothAdapter.STATE_OFF:
+                        Toast.makeText(context, "Bluetooth turned off. Turn back on to use the Peripheral Vision Display Application", Toast.LENGTH_SHORT).show();
+                        startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+                        break;
+                    case BluetoothAdapter.STATE_ON:
+//                        Toast.makeText(context, "Bluetooth turned on", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        }
+    };
 
     private void toggleNotificationService()
     {
@@ -245,5 +268,7 @@ public class MainActivity extends AppCompatActivity {
         Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
         locationserviceIntent.setAction(LocationForegroundService.STOP_ACTION);
         stopService(locationserviceIntent);
+
+        unregisterReceiver(bluetoothStateReceiver);
     }
 }

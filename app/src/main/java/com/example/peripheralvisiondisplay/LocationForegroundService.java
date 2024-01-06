@@ -104,7 +104,7 @@ public class LocationForegroundService extends Service {
             };
 
             NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelID)
-                    .setContentTitle("Foreground Service")
+                    .setContentTitle("Location Foreground Service")
                     .setContentText("Foreground service is running")
                     .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -120,9 +120,10 @@ public class LocationForegroundService extends Service {
                     .setMaxUpdateDelayMillis(1000)
                     .build();
 
-//            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-//                fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
-//            }
+            //removing this code stops everything from working
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+            }
         }
     }
 
@@ -157,7 +158,7 @@ public class LocationForegroundService extends Service {
         // Update the notification content with the latest listened notification text
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this, channelID)
-                        .setContentTitle("Foreground Service")
+                        .setContentTitle("Location Foreground Service")
                         .setContentText(notificationText) // Set the latest notification text here
                         .setSmallIcon(R.drawable.ic_launcher_foreground)
                         .setPriority(NotificationCompat.PRIORITY_HIGH);
@@ -170,7 +171,7 @@ public class LocationForegroundService extends Service {
 
     private void updateNotification(String content) {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelID)
-                .setContentTitle("Foreground Service")
+                .setContentTitle("Location Foreground Service")
                 .setContentText(content)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)

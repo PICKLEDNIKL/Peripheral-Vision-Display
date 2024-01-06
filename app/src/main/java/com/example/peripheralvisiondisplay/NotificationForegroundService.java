@@ -79,7 +79,7 @@ public class NotificationForegroundService extends Service {
     private void startService() {
         if (!isServiceRunning) {
             NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelID)
-                    .setContentTitle("Foreground Service")
+                    .setContentTitle("Notification Foreground Service")
                     .setContentText("Foreground service is running")
                     .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -123,7 +123,7 @@ public class NotificationForegroundService extends Service {
         // Update the notification content with the latest listened notification text
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this, channelID)
-                        .setContentTitle("Foreground Service")
+                        .setContentTitle("Notification Foreground Service")
                         .setContentText(notificationText) // Set the latest notification text here
                         .setSmallIcon(R.drawable.ic_launcher_foreground)
                         .setPriority(NotificationCompat.PRIORITY_HIGH);
