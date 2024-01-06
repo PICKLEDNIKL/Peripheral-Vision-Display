@@ -80,7 +80,6 @@ public class MainActivity extends AppCompatActivity {
 //            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
 //        }
 
-
     }
 
     private void toggleNotificationService()

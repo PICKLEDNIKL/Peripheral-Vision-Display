@@ -125,7 +125,7 @@ public class NotificationForegroundService extends Service {
                 new NotificationCompat.Builder(this, channelID)
                         .setContentTitle("Foreground Service")
                         .setContentText(notificationText) // Set the latest notification text here
-                        .setSmallIcon(R.drawable.ic_launcher_background)
+                        .setSmallIcon(R.drawable.ic_launcher_foreground)
                         .setPriority(NotificationCompat.PRIORITY_HIGH);
 
         Notification notification = notificationBuilder.build();
