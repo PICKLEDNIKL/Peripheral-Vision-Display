@@ -38,6 +38,7 @@ import androidx.core.content.ContextCompat;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int REQUEST_BLUETOOTH_SCAN_PERMISSION = 1;
     Button notificationServiceButton;
     Button locationServiceButton;
     //    Button stopServiceButton;
@@ -48,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
     boolean toggleNotificationService = false;
     boolean toggleLocationService = false;
     private static final int REQUEST_ENABLE_BT = 1;
+    private BluetoothManager bluetoothManager;
+    private BluetoothAdapter bluetoothAdapter;
 
 
     @Override
@@ -64,8 +67,14 @@ public class MainActivity extends AppCompatActivity {
         switchToMapsActivityButton = findViewById(R.id.switchToMapsActivityButton);
         switchToMapsActivityButton.setOnClickListener(view -> switchToMapsActivity());
 
-        BluetoothManager bluetoothManager = getSystemService(BluetoothManager.class);
-        BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.BLUETOOTH_SCAN}, REQUEST_BLUETOOTH_SCAN_PERMISSION);
+            }
+        }
+
+        bluetoothManager = getSystemService(BluetoothManager.class);
+        bluetoothAdapter = bluetoothManager.getAdapter();
 
         if (bluetoothAdapter == null) {
             Toast.makeText(this, "This device doesn't support bluetooth", Toast.LENGTH_SHORT).show();
@@ -99,6 +108,8 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case BluetoothAdapter.STATE_ON:
 //                        Toast.makeText(context, "Bluetooth turned on", Toast.LENGTH_SHORT).show();
+                        BluetoothScanner bluetoothScanner = new BluetoothScanner(bluetoothAdapter);
+                        bluetoothScanner.scanLeDevice();
                         break;
                 }
             }
