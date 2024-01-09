@@ -11,16 +11,19 @@ import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.LocationRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
@@ -37,7 +40,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 public class MainActivity extends AppCompatActivity {
-
+//TODO: MAKE IT SO THAT WHEN I LOOK FOR THE DEVICE, I DO IT BY NAME AND BY MAC ADDRESS. HOPEFULLY TX ON CIRCUIT PYTHON IS CORRECT?
+    // TODO: MIGHT NEED TO ADD ANOTHER LAYOUT FOR BLUETOOTH CONNECTION WHICH WILL INCLUDE SEARCHING FOR THE DEVICE AND THEN CONNECTING TO IT. BUTTONS ARE NEEDED AS THE WAY I AM DOING IT NOW DOESNT ACCOUNT FOR THE DEVICE ALREADY HAVING BLUETOOTH ON AND SO DOESNT SCAN FOR DEVICES UNTIL TURNED OFF AND BACK ON.
     private static final int REQUEST_BLUETOOTH_SCAN_PERMISSION = 1;
     Button notificationServiceButton;
     Button locationServiceButton;
@@ -51,6 +55,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 1;
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
+
+    private BluetoothLeService bluetoothService;
+    private String deviceAddress;
+    private boolean bound = false;
 
 
     @Override
@@ -90,6 +98,12 @@ public class MainActivity extends AppCompatActivity {
 
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         registerReceiver(bluetoothStateReceiver, filter);
+
+        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        bindService(gattServiceIntent, serviceConnection, BIND_AUTO_CREATE);
+        startService(gattServiceIntent);
+
+
     }
 
     private final BroadcastReceiver bluetoothStateReceiver = new BroadcastReceiver() {
@@ -115,6 +129,85 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    // Code to manage Service lifecycle.
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder service) {
+            bluetoothService = ((BluetoothLeService.LocalBinder) service).getService();
+            if (bluetoothService != null) {
+                if (!bluetoothService.initialize()) {
+                    Log.e("serviceconnected", "Unable to initialize Bluetooth");
+                    finish();
+                }
+                bound = true;
+                bluetoothService.connect(deviceAddress);
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            bluetoothService = null;
+            // TODO: 07/01/2024 check if bounds are necessary and remove from here and from destroy if not.
+            bound = false;
+        }
+    };
+
+    // LISTEN FOR UPDATES IN ACTIVITY
+    private final BroadcastReceiver gattUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
+                // Update your UI here to reflect that the device is connected
+                Toast.makeText(context, "device is connected", Toast.LENGTH_SHORT).show();
+
+            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
+                // Update your UI here to reflect that the device is disconnected
+                Toast.makeText(context, "device is disconnected", Toast.LENGTH_SHORT).show();
+
+            }
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerReceiver(gattUpdateReceiver, makeGattUpdateIntentFilter());
+        if (bluetoothService != null) {
+            final boolean result = bluetoothService.connect(deviceAddress);
+            Log.d("MainActivity", "Connect request result=" + result);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(gattUpdateReceiver);
+    }
+
+    private static IntentFilter makeGattUpdateIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
+        return intentFilter;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private void toggleNotificationService()
     {
@@ -281,5 +374,10 @@ public class MainActivity extends AppCompatActivity {
         stopService(locationserviceIntent);
 
         unregisterReceiver(bluetoothStateReceiver);
+
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
     }
 }
