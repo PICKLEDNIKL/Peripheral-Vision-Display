@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter bluetoothAdapter;
 
     private BluetoothLeService bluetoothService;
-    private String deviceAddress;
+    private String deviceAddress = "D7:0B:99:6B:B6:D7";
     private boolean bound = false;
 
 
@@ -100,8 +100,14 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(bluetoothStateReceiver, filter);
 
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(gattServiceIntent);
+        } else {
+            startService(gattServiceIntent);
+        }
         bindService(gattServiceIntent, serviceConnection, BIND_AUTO_CREATE);
-        startService(gattServiceIntent);
+//        startService(gattServiceIntent);
+
 
 
     }
@@ -143,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 bound = true;
                 bluetoothService.connect(deviceAddress);
+                Log.e("serviceconnected", "conencted to bluetooth service");
             }
         }
 

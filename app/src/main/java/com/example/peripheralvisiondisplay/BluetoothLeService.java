@@ -45,7 +45,7 @@ public class BluetoothLeService extends Service {
     private int connectionState = STATE_DISCONNECTED;
 
     //https://github.com/adafruit/bluetooth-low-energy#tx-characteristic---0x0003
-    public final static UUID PHONE_ALERT_STATUS_SERVICE_UUID = UUID.fromString("ADAF0003-4369-7263-7569-74507974686E");
+    public final static UUID CIRCUITPYTHON_TX_SERVICE_UUID = UUID.fromString("ADAF0003-4369-7263-7569-74507974686E");
 
     private final BluetoothGattCallback bluetoothGattCallback = new BluetoothGattCallback() {
         @Override

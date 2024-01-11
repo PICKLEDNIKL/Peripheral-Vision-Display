@@ -86,6 +86,13 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".BluetoothLeService"
+            android:enabled="true"
+            android:exported="false"
+            android:stopWithTask="true"
+            android:foregroundServiceType="connectedDevice" />
+
     </application>
 
 </manifest>
