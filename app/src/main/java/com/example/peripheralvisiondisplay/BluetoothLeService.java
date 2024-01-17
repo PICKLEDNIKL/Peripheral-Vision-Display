@@ -1,5 +1,8 @@
 package com.example.peripheralvisiondisplay;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,10 +13,12 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 
 import java.util.UUID;
 
@@ -44,6 +49,10 @@ public class BluetoothLeService extends Service {
 
     private int connectionState = STATE_DISCONNECTED;
 
+    final String channelID = "bluetoothforegroundchannelid";
+    public static final String START_ACTION = "com.example.peripheralvisiondisplay.START_FOREGROUND_SERVICE";
+    public static final String STOP_ACTION = "com.example.peripheralvisiondisplay.STOP_FOREGROUND_SERVICE";
+
     //https://github.com/adafruit/bluetooth-low-energy#tx-characteristic---0x0003
     public final static UUID CIRCUITPYTHON_TX_SERVICE_UUID = UUID.fromString("ADAF0003-4369-7263-7569-74507974686E");
 
@@ -64,6 +73,60 @@ public class BluetoothLeService extends Service {
             }
         }
     };
+
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        createNotificationChannel();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startID) {
+
+        Notification notification = new NotificationCompat.Builder(this, channelID)
+                .setContentTitle("My Service")
+                .setContentText("Service is running...")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .build();
+        // Make this service a foreground service
+        startForeground(3, notification);
+
+        if (intent != null && intent.getAction() != null) {
+            if (intent.getAction().equals(START_ACTION)) {
+                startService();
+            } else if (intent.getAction().equals(STOP_ACTION)) {
+                stopService();
+            }
+        }
+        return START_NOT_STICKY;
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "My Service Channel";
+            String description = "Channel for My Service";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(channelID, name, importance);
+            channel.setDescription(description);
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    private void startService() {
+        // Code to execute when the service is started
+        Log.i(TAG, "Service started");
+    }
+
+    private void stopService() {
+        // Code to execute when the service is stopped
+        Log.i(TAG, "Service stopped");
+        stopSelf();
+    }
 
     private void broadcastUpdate(final String action) {
         final Intent intent = new Intent(action);

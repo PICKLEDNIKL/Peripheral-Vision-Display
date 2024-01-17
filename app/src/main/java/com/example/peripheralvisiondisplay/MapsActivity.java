@@ -3,7 +3,10 @@ package com.example.peripheralvisiondisplay;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEventListener;
@@ -147,8 +150,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // check location permissions
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            LocationRequest locationRequest = createLocationRequest();
-            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
+//            LocationRequest locationRequest = createLocationRequest();
+//            fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
             if (isCameraMoved == false)
             {
                 Toast.makeText(this, "Retrieving current location", Toast.LENGTH_SHORT).show();
@@ -158,6 +161,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.getUiSettings().setMapToolbarEnabled(true);
             mMap.setMyLocationEnabled(true);
             mMap.getUiSettings().setMyLocationButtonEnabled(true);
+
+
         } else {
             // Handle location permission denied
 //            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
@@ -172,13 +177,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onResume();
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+
+        registerReceiver(locationUpdateReceiver, new IntentFilter("LocationUpdates"));
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+//        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
         sensorManager.unregisterListener(this);
+
+        unregisterReceiver(locationUpdateReceiver);
     }
 
 
@@ -225,34 +234,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Handle changes in sensor accuracy
     }
 
-    private LocationRequest createLocationRequest() {
-
-        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
-                .setWaitForAccurateLocation(true)
-                .setMinUpdateIntervalMillis(500)
-                .setMaxUpdateDelayMillis(1000)
-                .build();
-
-        return locationRequest;
-    }
-
-    private LocationCallback locationCallback = new LocationCallback() {
+    //TODO: NEED TO ADD THIS AFTER REMOVING THE CURRENT IMPLEMENTATION
+    private BroadcastReceiver locationUpdateReceiver = new BroadcastReceiver() {
         @Override
-        public void onLocationResult(LocationResult locationResult) {
-            if (locationResult == null) {
-                return;
-            }
-            for (Location location : locationResult.getLocations()) {
-                // Update UI with location data
-                currentLatitude = location.getLatitude();
-                currentLongitude = location.getLongitude();
-            }
+        public void onReceive(Context context, Intent intent) {
+            // Get the latitude and longitude from the Intent
+            double latitude = intent.getDoubleExtra("Latitude", 0);
+            double longitude = intent.getDoubleExtra("Longitude", 0);
 
-            mMap.clear();
-
-            LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
-//            mMap.addMarker(new MarkerOptions().position(currentLatLng)
-//                    .title("Current Location"));
+            // Update the map's location
+            LatLng currentLatLng = new LatLng(latitude, longitude);
 
             if (!isCameraMoved) {
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
@@ -269,6 +260,51 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.i("TAG", "onLocationResult: " + currentLatitude + " " + currentLongitude);
         }
     };
+
+//    private LocationRequest createLocationRequest() {
+//
+//        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+//                .setWaitForAccurateLocation(true)
+//                .setMinUpdateIntervalMillis(500)
+//                .setMaxUpdateDelayMillis(1000)
+//                .build();
+//
+//        return locationRequest;
+//    }
+//
+//    private LocationCallback locationCallback = new LocationCallback() {
+//        @Override
+//        public void onLocationResult(LocationResult locationResult) {
+//            if (locationResult == null) {
+//                return;
+//            }
+//            for (Location location : locationResult.getLocations()) {
+//                // Update UI with location data
+//                currentLatitude = location.getLatitude();
+//                currentLongitude = location.getLongitude();
+//            }
+//
+//            mMap.clear();
+//
+//            LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
+////            mMap.addMarker(new MarkerOptions().position(currentLatLng)
+////                    .title("Current Location"));
+//
+//            if (!isCameraMoved) {
+//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
+//                isCameraMoved = true;
+//            }
+//
+//            double biasDistance = 0.01; // This is the distance from the center to the edges of the rectangle in degrees. Adjust as needed.
+//            LatLng southwest = new LatLng(currentLatitude - biasDistance, currentLongitude - biasDistance);
+//            LatLng northeast = new LatLng(currentLatitude + biasDistance, currentLongitude + biasDistance);
+//            RectangularBounds bounds = RectangularBounds.newInstance(southwest, northeast);
+//            autocompleteFragment.setLocationBias(bounds);
+//            Log.i("bounds", "onCreate: " + bounds.toString());
+//
+//            Log.i("TAG", "onLocationResult: " + currentLatitude + " " + currentLongitude);
+//        }
+//    };
 
     private void searchForDestination() {
         if (selectedPlace == null) {

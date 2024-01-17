@@ -58,6 +58,15 @@ public class LocationForegroundService extends Service {
 
             if (intent.getAction().equals(START_ACTION) && isButtonOn) {
                 startService();
+                Notification notification = new NotificationCompat.Builder(this, channelID)
+                        .setContentTitle("Location Foreground Service")
+                        .setContentText("Foreground service is running")
+                        .setSmallIcon(R.drawable.ic_launcher_foreground)
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setOngoing(true)
+                        .build();
+//                Notification notification = notificationBuilder.build();
+                startForeground(notificationID, notification);
             } else if (intent.getAction().equals(STOP_ACTION) || !isButtonOn) {
                 stopService();
             } else if (intent.getAction().equals("com.example.peripheralvisiondisplay.NEW_NOTIFICATION")){
@@ -86,6 +95,8 @@ public class LocationForegroundService extends Service {
         }
     }
 
+
+
     private void startService() {
         if (!isServiceRunning) {
             fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
@@ -99,19 +110,18 @@ public class LocationForegroundService extends Service {
                     for (Location location : locationResult.getLocations()) {
                         String locationText = "Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude();
                         updateNotification(locationText);
+
+                        // Create an Intent to broadcast the location
+                        Intent intent = new Intent("LocationUpdates");
+                        intent.putExtra("Latitude", location.getLatitude());
+                        intent.putExtra("Longitude", location.getLongitude());
+
+                        // Broadcast the Intent
+                        sendBroadcast(intent);
                     }
                 }
             };
 
-            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelID)
-                    .setContentTitle("Location Foreground Service")
-                    .setContentText("Foreground service is running")
-                    .setSmallIcon(R.drawable.ic_launcher_foreground)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setOngoing(true);
-
-            Notification notification = notificationBuilder.build();
-            startForeground(notificationID, notification);
             isServiceRunning = true;
 
             LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
@@ -183,4 +193,6 @@ public class LocationForegroundService extends Service {
             manager.notify(notificationID, notification);
         }
     }
+
+
 }
