@@ -139,6 +139,7 @@ public class LocationForegroundService extends Service {
 
     private void stopService() {
         if (isServiceRunning) {
+            Log.d("LocationService", "stopService() called");
             fusedLocationProviderClient.removeLocationUpdates(locationCallback);
             stopForeground(true);
             stopSelf();
@@ -149,6 +150,8 @@ public class LocationForegroundService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+        stopForeground(true);
         isServiceRunning = false;
     }
 

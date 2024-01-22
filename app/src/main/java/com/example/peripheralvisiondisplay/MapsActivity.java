@@ -239,11 +239,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         @Override
         public void onReceive(Context context, Intent intent) {
             // Get the latitude and longitude from the Intent
-            double latitude = intent.getDoubleExtra("Latitude", 0);
-            double longitude = intent.getDoubleExtra("Longitude", 0);
+            currentLatitude = intent.getDoubleExtra("Latitude", 0);
+            currentLongitude = intent.getDoubleExtra("Longitude", 0);
 
+//            mMap.clear();
             // Update the map's location
-            LatLng currentLatLng = new LatLng(latitude, longitude);
+            LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
 
             if (!isCameraMoved) {
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
@@ -315,7 +316,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        String destination = destinationEditText.getText().toString();
 
         // Construct the URL for the Google Maps Directions API
-        Log.i("eas", "searchForDestination: API_KEY = " + apikey);
+//        Log.i("eas", "searchForDestination: API_KEY = " + apikey);
         String url = "https://maps.googleapis.com/maps/api/directions/json" +
                 "?destination=" + selectedPlace.latitude + "," + selectedPlace.longitude +
                 "&mode=walking" +
@@ -323,6 +324,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 "&key=" + apikey;
 
         // Execute the AsyncTask to perform the API request
-        new DirectionsTask(mMap).execute(url);
+        new DirectionsTask(mMap, this).execute(url);
+
+        Intent dfserviceintent = new Intent(this, DirectionForegroundService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(dfserviceintent);
+        } else {
+            startService(dfserviceintent);
+        }
     }
 }

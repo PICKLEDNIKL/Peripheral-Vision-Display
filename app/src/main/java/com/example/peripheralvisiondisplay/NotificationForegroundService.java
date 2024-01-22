@@ -32,8 +32,6 @@ public class NotificationForegroundService extends Service {
     private boolean isServiceRunning = false;
 
 
-
-
     @Override
     public void onCreate() {
         super.onCreate();

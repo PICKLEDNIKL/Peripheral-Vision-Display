@@ -1,10 +1,13 @@
 package com.example.peripheralvisiondisplay;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.BufferedReader;
@@ -23,9 +26,15 @@ import org.json.JSONObject;
 public class DirectionsTask extends AsyncTask<String, Void, String> {
 
     private GoogleMap mMap;
+    private Context mContext;
+    private List<String> stepsList = new ArrayList<>();
+    private List<LatLng> stepsEndLocationList = new ArrayList<>();
+    private int currentStepIndex = 0;
+    private LatLng currentStepEndLocation;
 
-    DirectionsTask(GoogleMap mMap) {
+    DirectionsTask(GoogleMap mMap, Context context) {
         this.mMap = mMap;
+        this.mContext = context;
     }
     @Override
     protected String doInBackground(String... urls) {
@@ -60,7 +69,6 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
         parseDirectionsData(result);
     }
 
-    
     private void parseDirectionsData(String jsonData) {
         try {
             JSONObject jsonObject = new JSONObject(jsonData);
@@ -82,15 +90,24 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                         JSONObject step = steps.getJSONObject(j);
 
                         // Get the start and end location of the step
-                        JSONObject startLocation = step.getJSONObject("start_location");
+//                        JSONObject startLocation = step.getJSONObject("start_location");
                         JSONObject endLocation = step.getJSONObject("end_location");
 
                         // Get the text instruction for the step
                         String instruction = step.getString("html_instructions");
+                        stepsList.add(instruction);
 
-                        // Get the distance and duration of the step
-                        JSONObject distance = step.getJSONObject("distance");
-                        JSONObject duration = step.getJSONObject("duration");
+                        // Get the end location of the step
+                        double endLat = endLocation.getDouble("lat");
+                        double endLng = endLocation.getDouble("lng");
+                        currentStepEndLocation = new LatLng(endLat, endLng);
+                        Log.d("eas", "parseDirectionsData: " + currentStepEndLocation.toString());
+                        mMap.addMarker(new MarkerOptions().position(currentStepEndLocation).title("Step " + (j + 1) + " End"));
+                        stepsEndLocationList.add(currentStepEndLocation);
+
+//                        // Get the distance and duration of the step
+//                        JSONObject distance = step.getJSONObject("distance");
+//                        JSONObject duration = step.getJSONObject("duration");
 
                         // TODO: Use this information to implement turn-by-turn navigation
                     }
@@ -104,11 +121,31 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                 PolylineOptions polylineOptions = new PolylineOptions();
                 polylineOptions.addAll(decodedPolyline);
                 mMap.addPolyline(polylineOptions);
+
+//todo: add this
+                // Send the steps data to DirectionForegroundService
+                Intent intent = new Intent("StepsData");
+                intent.putStringArrayListExtra("StepsList", new ArrayList<>(stepsList));
+                sendBroadcast(intent);
+
+                intent = new Intent("StepsEndLocationData");
+                intent.putParcelableArrayListExtra("StepsEndLocationList", new ArrayList<>(stepsEndLocationList));
+
+                sendBroadcast(intent);
+
             } else {
                 // Handle other status responses (e.g., ZERO_RESULTS, NOT_FOUND, etc.)
             }
         } catch (JSONException e) {
             e.printStackTrace();
+        }
+    }
+
+    // This method is required because DirectionsTask is not a Context
+    // We get the application context from the GoogleMap instance
+    private void sendBroadcast(Intent intent) {
+        if (mMap != null && mContext != null) {
+            mContext.sendBroadcast(intent);
         }
     }
 
@@ -144,5 +181,35 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
         }
         return poly;
     }
+
+//    public boolean isStepFulfilled(LatLng userLocation) {
+//        // Calculate the distance between the user's location and the end location of the current step
+//        double distance = calculateDistance(userLocation, currentStepEndLocation);
+//
+//        // Consider the step as fulfilled if the distance is less than a certain threshold
+//        // The threshold can be adjusted based on your requirements
+//        return distance < 10; // 10 meters
+//    }
+
+//    public double calculateDistance(LatLng point1, LatLng point2) {
+//        double earthRadius = 6371; // Radius of the earth in km
+//        double latDiff = Math.toRadians(point2.latitude - point1.latitude);
+//        double lngDiff = Math.toRadians(point2.longitude - point1.longitude);
+//        double a = Math.sin(latDiff / 2) * Math.sin(latDiff / 2)
+//                + Math.cos(Math.toRadians(point1.latitude)) * Math.cos(Math.toRadians(point2.latitude))
+//                * Math.sin(lngDiff / 2) * Math.sin(lngDiff / 2);
+//        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//        double distance = earthRadius * c; // Convert to meters
+//        return distance * 1000;
+//    }
+
+
+//    public String getNextStep() {
+//        if (currentStepIndex < stepsList.size()) {
+//            return stepsList.get(currentStepIndex++);
+//        } else {
+//            return null; // No more steps
+//        }
+//    }
 
 }
