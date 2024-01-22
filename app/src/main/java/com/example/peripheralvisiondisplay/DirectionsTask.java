@@ -101,15 +101,15 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                         double endLat = endLocation.getDouble("lat");
                         double endLng = endLocation.getDouble("lng");
                         currentStepEndLocation = new LatLng(endLat, endLng);
-                        Log.d("eas", "parseDirectionsData: " + currentStepEndLocation.toString());
+//                        Log.d("eas", "parseDirectionsData: " + currentStepEndLocation.toString());
                         mMap.addMarker(new MarkerOptions().position(currentStepEndLocation).title("Step " + (j + 1) + " End"));
+                        // adds currentstepend to list to send to directionforegroundservice
                         stepsEndLocationList.add(currentStepEndLocation);
 
 //                        // Get the distance and duration of the step
 //                        JSONObject distance = step.getJSONObject("distance");
 //                        JSONObject duration = step.getJSONObject("duration");
 
-                        // TODO: Use this information to implement turn-by-turn navigation
                     }
                 }
 
@@ -122,13 +122,13 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                 polylineOptions.addAll(decodedPolyline);
                 mMap.addPolyline(polylineOptions);
 
-//todo: add this
                 // Send the steps data to DirectionForegroundService
                 Intent intent = new Intent("StepsData");
                 intent.putStringArrayListExtra("StepsList", new ArrayList<>(stepsList));
-                sendBroadcast(intent);
+//                sendBroadcast(intent);
 
-                intent = new Intent("StepsEndLocationData");
+                //todo: send the steps end location data to DirectionForegroundService - they for some reason dont work together?
+//                intent = new Intent("StepsEndLocationData");
                 intent.putParcelableArrayListExtra("StepsEndLocationList", new ArrayList<>(stepsEndLocationList));
 
                 sendBroadcast(intent);

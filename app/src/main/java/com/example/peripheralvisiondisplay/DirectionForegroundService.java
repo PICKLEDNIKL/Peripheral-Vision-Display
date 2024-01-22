@@ -35,7 +35,10 @@ public class DirectionForegroundService extends Service {
     private LocationCallback locationCallback;
     private List<String> stepsList = new ArrayList<>();
     private List<LatLng> stepsEndLocationList = new ArrayList<>();
+    private double currentLatitude;
+    private double currentLongitude;
     private int currentStepIndex = 0;
+    private LatLng currentLatLng;
     private LatLng currentStepEndLocation;
 
     final String channelID = "directionforegroundchannelid";
@@ -46,22 +49,12 @@ public class DirectionForegroundService extends Service {
         super.onCreate();
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        locationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                if (locationResult == null) {
-                    return;
-                }
-                for (Location location : locationResult.getLocations()) {
-                    LatLng userLocation = new LatLng(location.getLatitude(), location.getLongitude());
-                    if (isStepFulfilled(userLocation)) {
-                        String nextStep = getNextStep();
-                        // Handle the next step...
-                    }
-                }
-            }
-        };
-        registerReceiver(stepsDataReceiver, new IntentFilter("StepsData"));
+
+        IntentFilter filter = new IntentFilter("StepsData");
+        registerReceiver(stepsDataReceiver, filter);
+
+        IntentFilter filter2 = new IntentFilter("LocationUpdates");
+        registerReceiver(locationUpdateReceiver, filter2);
     }
 
     @Override
@@ -122,13 +115,19 @@ public class DirectionForegroundService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             // Get the latitude and longitude from the Intent
-            double currentLatitude = intent.getDoubleExtra("Latitude", 0);
-            double currentLongitude = intent.getDoubleExtra("Longitude", 0);
+            currentLatitude = intent.getDoubleExtra("Latitude", 0);
+            currentLongitude = intent.getDoubleExtra("Longitude", 0);
 
-            // Update the map's location
-            LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
+            currentLatLng = new LatLng(currentLatitude, currentLongitude);
+            Log.i("LOCATIONTAG", "directionforegroundlocationreceiver: " + currentLatitude + " " + currentLongitude);
 
-            Log.i("TAG", "directionforegroundlocationreceiver: " + currentLatitude + " " + currentLongitude);
+            //todo: if a step is fulfilled, get the next step and handle it. i will also need to get the end location of the current step.
+            if (isStepFulfilled()) {
+                String nextStep = getNextStep();
+                // Handle the next step...
+            }
+
+            //todo: if the user is walking away from the direction = mention to the user to turn back. - use end location of current step.
 
         }
     };
@@ -139,21 +138,16 @@ public class DirectionForegroundService extends Service {
             if ("StepsData".equals(intent.getAction())) {
                 stepsList = intent.getStringArrayListExtra("StepsList");
                 Log.d("dfservice", "onReceive works");
-                // Now you have the steps data in stepsList. You can use it as needed.
+
+                stepsEndLocationList = intent.getParcelableArrayListExtra("StepsEndLocationList");
 
                 // Print each step in the log
                 for (String step : stepsList) {
                     Log.d("dfservice", "Step: " + step);
                 }
-            }
-            if ("StepsEndLocationData".equals(intent.getAction())) {
-                stepsEndLocationList = intent.getParcelableArrayListExtra("StepsEndLocationList");
-                Log.d("dfservice", "onReceive works");
-                // Now you have the steps data in stepsList. You can use it as needed.
-
                 // Print each step in the log
                 for (LatLng step : stepsEndLocationList) {
-                    Log.d("dfservice", "Step: " + step);
+                    Log.d("dfservice", "Step latlng: " + step);
                 }
             }
         }
@@ -167,13 +161,19 @@ public class DirectionForegroundService extends Service {
         }
     }
 
-    public boolean isStepFulfilled(LatLng userLocation) {
-        // Calculate the distance between the user's location and the end location of the current step
-        double distance = calculateDistance(userLocation, currentStepEndLocation);
+    public boolean isStepFulfilled() {
+        // Check if currentLatLng and currentStepEndLocation are not null
+        if (currentLatLng != null && currentStepEndLocation != null) {
+            // Calculate the distance between the user's location and the end location of the current step
+            double distance = calculateDistance(currentLatLng, currentStepEndLocation);
 
-        // Consider the step as fulfilled if the distance is less than a certain threshold
-        // The threshold can be adjusted based on your requirements
-        return distance < 10; // 10 meters
+            // Consider the step as fulfilled if the distance is less than a certain threshold
+            // The threshold can be adjusted based on your requirements
+            return distance < 5; // 10 meters if 5 isn't enough
+        } else {
+            // If either currentLatLng or currentStepEndLocation is null, return false
+            return false;
+        }
     }
 
     public double calculateDistance(LatLng point1, LatLng point2) {
@@ -187,5 +187,4 @@ public class DirectionForegroundService extends Service {
         double distance = earthRadius * c; // Convert to meters
         return distance * 1000;
     }
-
 }
