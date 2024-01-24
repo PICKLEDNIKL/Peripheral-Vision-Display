@@ -201,21 +201,6 @@ public class MainActivity extends AppCompatActivity {
         return intentFilter;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private void toggleNotificationService()
     {
         // Check if notification listener permission is granted
@@ -353,8 +338,12 @@ public class MainActivity extends AppCompatActivity {
     private void switchToMapsActivity()
     {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            Intent intent = new Intent(this, MapsActivity.class);
-            startActivity(intent);
+            if (toggleLocationService) {
+                Intent intent = new Intent(this, MapsActivity.class);
+                startActivity(intent);
+            } else {
+                Toast.makeText(this, "Please start the location service first", Toast.LENGTH_SHORT).show();
+            }
         }
         else
         {

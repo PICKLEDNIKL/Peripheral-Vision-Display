@@ -28,21 +28,29 @@ import com.google.android.libraries.places.api.model.RectangularBounds;
 
 import java.util.ArrayList;
 import java.util.List;
-
+//todo need to make it so that if the user has walked the wrong way, it can update the directions to accomodate the user.
+//todo: also need to make it so that it tells the user if they are walking the wrong way. i may need to get the previous step information for them to get to the destination of that step before they can continue.
+//todo: check if the user is following the path
 public class DirectionForegroundService extends Service {
 
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private List<String> stepsList = new ArrayList<>();
     private List<LatLng> stepsEndLocationList = new ArrayList<>();
+    private List<Integer> stepsDistanceList = new ArrayList<>();
     private double currentLatitude;
     private double currentLongitude;
     private int currentStepIndex = 0;
     private LatLng currentLatLng;
     private LatLng currentStepEndLocation;
+    private String currentStepString;
+
+    private LatLng[] latLngArray = new LatLng[2]; //index 0 = previous, index 1 = current location
 
     final String channelID = "directionforegroundchannelid";
     final int notificationID = 3;
+
+    private String apikey = BuildConfig.apiKey;
 
     @Override
     public void onCreate() {
@@ -118,16 +126,46 @@ public class DirectionForegroundService extends Service {
             currentLatitude = intent.getDoubleExtra("Latitude", 0);
             currentLongitude = intent.getDoubleExtra("Longitude", 0);
 
+            // Update the LatLng array
+            if (latLngArray[1] != null) {
+                latLngArray[0] = latLngArray[1]; // Move the current LatLng to the previous LatLng
+            }
+            latLngArray[1] = new LatLng(currentLatitude, currentLongitude); // Update the current LatLng
+
             currentLatLng = new LatLng(currentLatitude, currentLongitude);
             Log.i("LOCATIONTAG", "directionforegroundlocationreceiver: " + currentLatitude + " " + currentLongitude);
 
-            //todo: if a step is fulfilled, get the next step and handle it. i will also need to get the end location of the current step.
             if (isStepFulfilled()) {
-                String nextStep = getNextStep();
-                // Handle the next step...
+
+                // Handle condition when the user has completed their journey and there are no step information left.
+                currentStepString = getNextStep();
+                if (currentStepString == null){
+                    currentStepString = "You have reached your destination.";
+                }
+
+                currentStepEndLocation = getNextStepEndLocation();
+                currentStepIndex++;
+                createNotification("Step "+ currentStepIndex + " : " + currentStepString);
+            }
+
+            if (isUserOffPath()) {
+
+                String url = "https://maps.googleapis.com/maps/api/directions/json" +
+                        "?destination=" + MapsActivity.selectedPlace.latitude + "," + MapsActivity.selectedPlace.longitude +
+                        "&mode=walking" +
+                        "&origin=" + currentLatitude + "," + currentLongitude +
+                        "&key=" + apikey;
+
+                Intent newdirectionintent = new Intent("RecalcPath");
+                newdirectionintent.putExtra("url", url);
+                sendBroadcast(newdirectionintent);
+
+                // Execute the AsyncTask to perform the API request
+//                new DirectionsTask(DirectionForegroundService.this).execute(url);
             }
 
             //todo: if the user is walking away from the direction = mention to the user to turn back. - use end location of current step.
+
 
         }
     };
@@ -137,25 +175,47 @@ public class DirectionForegroundService extends Service {
         public void onReceive(Context context, Intent intent) {
             if ("StepsData".equals(intent.getAction())) {
                 stepsList = intent.getStringArrayListExtra("StepsList");
+                stepsEndLocationList = intent.getParcelableArrayListExtra("StepsEndLocationList");
+                stepsDistanceList = intent.getIntegerArrayListExtra("StepsDistanceList");
+
                 Log.d("dfservice", "onReceive works");
 
-                stepsEndLocationList = intent.getParcelableArrayListExtra("StepsEndLocationList");
+                // reset the current step index if the user is getting new directions
+                currentStepIndex = 0;
+
+                currentStepString = stepsList.get(currentStepIndex);
+                currentStepEndLocation = stepsEndLocationList.get(currentStepIndex);
+                currentStepIndex++;
+                createNotification("Step "+ currentStepIndex + " : " + currentStepString);
 
                 // Print each step in the log
                 for (String step : stepsList) {
-                    Log.d("dfservice", "Step: " + step);
+                    Log.d("dfservice", step);
                 }
                 // Print each step in the log
                 for (LatLng step : stepsEndLocationList) {
                     Log.d("dfservice", "Step latlng: " + step);
                 }
+                // Print each step in the log
+                for (Integer step : stepsDistanceList) {
+                    Log.d("dfservice", "Step distance: " + step);
+                }
+
             }
         }
     };
 
     public String getNextStep() {
         if (currentStepIndex < stepsList.size()) {
-            return stepsList.get(currentStepIndex++);
+            return stepsList.get(currentStepIndex);
+        } else {
+            return null; // No more steps
+        }
+    }
+
+    public LatLng getNextStepEndLocation() {
+        if (currentStepIndex < stepsEndLocationList.size()) {
+            return stepsEndLocationList.get(currentStepIndex);
         } else {
             return null; // No more steps
         }
@@ -169,11 +229,40 @@ public class DirectionForegroundService extends Service {
 
             // Consider the step as fulfilled if the distance is less than a certain threshold
             // The threshold can be adjusted based on your requirements
-            return distance < 5; // 10 meters if 5 isn't enough
+            return distance < 10; // 10 meters
         } else {
             // If either currentLatLng or currentStepEndLocation is null, return false
             return false;
         }
+    }
+
+    public boolean isUserOffPath() {
+        // Check if currentLatLng and currentStepEndLocation are not null
+        if (latLngArray[1] != null && currentStepEndLocation != null) {
+            // Calculate the distance between the user's location and the end location of the current step
+            double currentDistance = calculateDistance(latLngArray[1], currentStepEndLocation);
+
+            // Get the expected distance for the current step
+            int expectedDistance = stepsDistanceList.get(currentStepIndex);
+
+            // Check if the user's distance is significantly greater than the expected distance
+            if (currentDistance > expectedDistance * 1.2) { // 20% tolerance
+                Log.d("directionforegroundservice", "isUserOffPath: true 20%");
+                return true; // The user is off the path
+            }
+
+            // Check if the user is moving towards the end of the step
+            if (latLngArray[0] != null) {
+                double previousDistance = calculateDistance(latLngArray[0], currentStepEndLocation);
+                if (currentDistance >= previousDistance * 1.05) {
+                    Log.d("directionforegroundservice", "isUserOffPath: true 1.05%");
+                    return true; // The user is not moving towards the end of the step
+                }
+            }
+        }
+        Log.d("directionforegroundservice", "isUserOffPath: false ");
+
+        return false; //todo: change to true later when i get the rest of it working
     }
 
     public double calculateDistance(LatLng point1, LatLng point2) {
@@ -187,4 +276,21 @@ public class DirectionForegroundService extends Service {
         double distance = earthRadius * c; // Convert to meters
         return distance * 1000;
     }
+
+
+    private void createNotification(String message) {
+        Notification notification = new NotificationCompat.Builder(this, channelID)
+                .setContentTitle("Direction Service")
+                .setContentText(message)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .build();
+
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        if (notificationManager != null) {
+            notificationManager.notify(notificationID, notification);
+        }
+    }
+
 }
+
+

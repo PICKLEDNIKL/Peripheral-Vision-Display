@@ -18,11 +18,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-//        val MAPS_API_KEY = Properties().apply {
-//            load(rootProject.file("gradle.properties").inputStream())
-//        }.getProperty("MAPS_API_KEY")
-
-//        buildConfigField("String", "API_KEY", MAPS_API_KEY)
     }
 
     buildTypes {
@@ -53,6 +48,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.maps.android:android-maps-utils:3.8.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

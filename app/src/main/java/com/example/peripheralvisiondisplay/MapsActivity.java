@@ -69,7 +69,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     double currentLatitude;
     double currentLongitude;
 
-    private LatLng selectedPlace;
+    public static LatLng selectedPlace;
     private String apikey = BuildConfig.apiKey;
 
     private AutocompleteSupportFragment autocompleteFragment;
@@ -142,6 +142,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+
+        IntentFilter filter = new IntentFilter("RecalculatePath");
+        registerReceiver(recalculatePathReceiver, filter);
     }
 
     @Override
@@ -190,6 +193,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         unregisterReceiver(locationUpdateReceiver);
     }
 
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        // Unregister the BroadcastReceiver
+        unregisterReceiver(recalculatePathReceiver);
+    }
 
     private float[] lowPassFilter( float input[], float output[] ) {
         if ( output == null ) return input;
@@ -262,50 +273,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     };
 
-//    private LocationRequest createLocationRequest() {
-//
-//        LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
-//                .setWaitForAccurateLocation(true)
-//                .setMinUpdateIntervalMillis(500)
-//                .setMaxUpdateDelayMillis(1000)
-//                .build();
-//
-//        return locationRequest;
-//    }
-//
-//    private LocationCallback locationCallback = new LocationCallback() {
-//        @Override
-//        public void onLocationResult(LocationResult locationResult) {
-//            if (locationResult == null) {
-//                return;
-//            }
-//            for (Location location : locationResult.getLocations()) {
-//                // Update UI with location data
-//                currentLatitude = location.getLatitude();
-//                currentLongitude = location.getLongitude();
-//            }
-//
-//            mMap.clear();
-//
-//            LatLng currentLatLng = new LatLng(currentLatitude, currentLongitude);
-////            mMap.addMarker(new MarkerOptions().position(currentLatLng)
-////                    .title("Current Location"));
-//
-//            if (!isCameraMoved) {
-//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15));
-//                isCameraMoved = true;
-//            }
-//
-//            double biasDistance = 0.01; // This is the distance from the center to the edges of the rectangle in degrees. Adjust as needed.
-//            LatLng southwest = new LatLng(currentLatitude - biasDistance, currentLongitude - biasDistance);
-//            LatLng northeast = new LatLng(currentLatitude + biasDistance, currentLongitude + biasDistance);
-//            RectangularBounds bounds = RectangularBounds.newInstance(southwest, northeast);
-//            autocompleteFragment.setLocationBias(bounds);
-//            Log.i("bounds", "onCreate: " + bounds.toString());
-//
-//            Log.i("TAG", "onLocationResult: " + currentLatitude + " " + currentLongitude);
-//        }
-//    };
+    private BroadcastReceiver recalculatePathReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if ("RecalculatePath".equals(intent.getAction())) {
+                // Get the URL from the Intent
+                String url = intent.getStringExtra("url");
+                Log.i("recalculate", "onReceive: " + url);
+                // Execute DirectionsTask with this URL
+                new DirectionsTask(mMap, MapsActivity.this).execute(url);
+            }
+        }
+    };
+
+
 
     private void searchForDestination() {
         if (selectedPlace == null) {
