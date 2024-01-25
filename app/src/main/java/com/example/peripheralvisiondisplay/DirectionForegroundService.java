@@ -14,6 +14,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -229,7 +230,7 @@ public class DirectionForegroundService extends Service {
 
             // Consider the step as fulfilled if the distance is less than a certain threshold
             // The threshold can be adjusted based on your requirements
-            return distance < 10; // 10 meters
+            return distance < 15; // 15 meters
         } else {
             // If either currentLatLng or currentStepEndLocation is null, return false
             return false;
@@ -246,8 +247,9 @@ public class DirectionForegroundService extends Service {
             int expectedDistance = stepsDistanceList.get(currentStepIndex);
 
             // Check if the user's distance is significantly greater than the expected distance
-            if (currentDistance > expectedDistance * 1.2) { // 20% tolerance
-                Log.d("directionforegroundservice", "isUserOffPath: true 20%");
+            if (currentDistance > expectedDistance * 1.1) { // 10% tolerance
+                Toast.makeText(this, "user distance > expected distance", Toast.LENGTH_SHORT).show();
+                Log.d("directionforegroundservice", "isUserOffPath: true 10%");
                 return true; // The user is off the path
             }
 
@@ -255,6 +257,7 @@ public class DirectionForegroundService extends Service {
             if (latLngArray[0] != null) {
                 double previousDistance = calculateDistance(latLngArray[0], currentStepEndLocation);
                 if (currentDistance >= previousDistance * 1.05) {
+                    Toast.makeText(this, "user is moving off path", Toast.LENGTH_SHORT).show();
                     Log.d("directionforegroundservice", "isUserOffPath: true 1.05%");
                     return true; // The user is not moving towards the end of the step
                 }
@@ -262,7 +265,7 @@ public class DirectionForegroundService extends Service {
         }
         Log.d("directionforegroundservice", "isUserOffPath: false ");
 
-        return false; //todo: change to true later when i get the rest of it working
+        return false;
     }
 
     public double calculateDistance(LatLng point1, LatLng point2) {

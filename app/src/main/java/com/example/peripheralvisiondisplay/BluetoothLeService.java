@@ -8,6 +8,8 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
@@ -20,6 +22,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import java.util.List;
 import java.util.UUID;
 
 public class BluetoothLeService extends Service {
@@ -54,7 +57,8 @@ public class BluetoothLeService extends Service {
     public static final String STOP_ACTION = "com.example.peripheralvisiondisplay.STOP_FOREGROUND_SERVICE";
 
     //https://github.com/adafruit/bluetooth-low-energy#tx-characteristic---0x0003
-    public final static UUID CIRCUITPYTHON_TX_SERVICE_UUID = UUID.fromString("ADAF0003-4369-7263-7569-74507974686E");
+    public final static UUID SERVICE_UUID = UUID.fromString("ADAF0001-4369-7263-7569-74507974686E");
+    public final static UUID CHARACTERISTIC_UUID = UUID.fromString("ADAF0003-4369-7263-7569-74507974686E");
 
     private final BluetoothGattCallback bluetoothGattCallback = new BluetoothGattCallback() {
         @Override
@@ -192,6 +196,9 @@ public class BluetoothLeService extends Service {
             // connect to the GATT server on the device
             bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
             Log.d(TAG, "Trying to create a new connection.");
+            if (bluetoothGatt != null) {
+                printServiceAndCharacteristicUUIDs(); // Call the method here
+            }
             return true;
         } catch (IllegalArgumentException exception) {
             Log.w(TAG, "Device not found with provided address.  Unable to connect.");
@@ -206,6 +213,58 @@ public class BluetoothLeService extends Service {
             return;
         }
         bluetoothGatt.disconnect();
+    }
+
+    public void printServiceAndCharacteristicUUIDs() {
+        if (bluetoothGatt == null) {
+            Log.w(TAG, "BluetoothGatt not initialized");
+            return;
+        }
+
+        // Get the list of services
+        List<BluetoothGattService> services = bluetoothGatt.getServices();
+
+        for (BluetoothGattService service : services) {
+            // Print the service UUID
+            Log.i(TAG, "Service UUID: " + service.getUuid().toString());
+
+            // Get the list of characteristics for this service
+            List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
+
+            for (BluetoothGattCharacteristic characteristic : characteristics) {
+                // Print the characteristic UUID
+                Log.i(TAG, "Characteristic UUID: " + characteristic.getUuid().toString());
+            }
+        }
+    }
+
+    public void writeCharacteristic(String value) {
+        if (bluetoothGatt == null) {
+            Log.w(TAG, "BluetoothGatt not initialized");
+            return;
+        }
+
+        // Get the service
+        BluetoothGattService service = bluetoothGatt.getService(SERVICE_UUID);
+        if (service == null) {
+            Log.w(TAG, "Service not found");
+            return;
+        }
+
+        // Get the characteristic
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(CHARACTERISTIC_UUID);
+        if (characteristic == null) {
+            Log.w(TAG, "Characteristic not found");
+            return;
+        }
+
+        // Set the value to the characteristic
+        characteristic.setValue(value);
+
+        // Write the characteristic
+        if (!bluetoothGatt.writeCharacteristic(characteristic)) {
+            Log.w(TAG, "Failed to write characteristic");
+        }
     }
 
     private void close() {

@@ -19,7 +19,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Confirm Destination"
-        android:layout_centerHorizontal="true"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/autocomplete_fragment"/>
+
+    <Button
+        android:id="@+id/switchToCalibrationButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CALIBRATE PHONE"
+        android:layout_alignParentRight="true"
         android:layout_below="@id/autocomplete_fragment"/>
 
     <!-- fragment to show map -->

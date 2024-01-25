@@ -41,29 +41,6 @@
         android:text="Start Location Service"
         android:textSize="50px" />
 
-<!--    &lt;!&ndash;stop button&ndash;&gt;-->
-<!--    <Button-->
-<!--        android:id="@+id/stopServiceButton"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="102dp"-->
-<!--        android:layout_centerHorizontal="true"-->
-<!--        android:layout_centerVertical="true"-->
-<!--        android:layout_gravity="center"-->
-<!--        android:layout_marginTop="40dp"-->
-<!--        android:text="Stop Notification Service"-->
-<!--        android:textSize="50px" />-->
-
-<!--    <TextView-->
-<!--        android:id="@+id/statusText"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:text="Status:"-->
-<!--        android:layout_gravity="left"-->
-<!--        android:layout_marginLeft="40dp"-->
-<!--        android:layout_marginTop="40dp"-->
-<!--        android:textColor="@color/black"-->
-<!--        android:textSize="65px"/>-->
-
     <Button
         android:id="@+id/switchToMapsActivityButton"
         android:layout_width="wrap_content"

@@ -63,8 +63,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final int REQUEST_LOCATION_PERMISSION = 1001;
 
-    EditText destinationEditText;
     Button searchButton;
+    Button calibrationButton;
 
     double currentLatitude;
     double currentLongitude;
@@ -109,6 +109,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        destinationEditText = findViewById(R.id.destinationEditText);
         searchButton = findViewById(R.id.searchButton);
         searchButton.setOnClickListener(view -> searchForDestination());
+
+        calibrationButton = findViewById(R.id.switchToCalibrationButton);
+        calibrationButton.setOnClickListener(view -> switchToCalibrationActivity());
 
         // Initialize the SDK
         Places.initialize(getApplicationContext(), apikey);
@@ -280,6 +283,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // Get the URL from the Intent
                 String url = intent.getStringExtra("url");
                 Log.i("recalculate", "onReceive: " + url);
+                Toast.makeText(context, "Recalculating path", Toast.LENGTH_SHORT).show();
                 // Execute DirectionsTask with this URL
                 new DirectionsTask(mMap, MapsActivity.this).execute(url);
             }
@@ -312,6 +316,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             startForegroundService(dfserviceintent);
         } else {
             startService(dfserviceintent);
+        }
+    }
+
+    private void switchToCalibrationActivity()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            Intent intent = new Intent(this, CalibrationActivity.class);
+            startActivity(intent);
+        }
+        else
+        {
+            Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
         }
     }
 }
