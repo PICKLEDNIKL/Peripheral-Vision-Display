@@ -22,6 +22,7 @@ import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import java.util.List;
@@ -55,6 +56,9 @@ public class BluetoothLeService extends Service {
     private int connectionState = STATE_DISCONNECTED;
 
     final String channelID = "bluetoothforegroundchannelid";
+    final int notificationID = 3;
+
+
     public static final String START_ACTION = "com.example.peripheralvisiondisplay.START_FOREGROUND_SERVICE";
     public static final String STOP_ACTION = "com.example.peripheralvisiondisplay.STOP_FOREGROUND_SERVICE";
 
@@ -66,6 +70,8 @@ public class BluetoothLeService extends Service {
 
     private int notificationcount = 0;
 
+    private boolean isServiceRunning = false;
+
     private final BluetoothGattCallback bluetoothGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -73,6 +79,7 @@ public class BluetoothLeService extends Service {
                 // successfully connected to the GATT Server
                 connectionState = STATE_CONNECTED;
                 broadcastUpdate(ACTION_GATT_CONNECTED);
+                updateNotification("Connected to GATT server.");
                 Log.i(TAG, "Connected to GATT server.");
                 // TODO: DISCOVER SERVICES IF I NEED TO???
                 bluetoothGatt.discoverServices();
@@ -81,6 +88,7 @@ public class BluetoothLeService extends Service {
                 // disconnected from the GATT Server
                 connectionState = STATE_DISCONNECTED;
                 broadcastUpdate(ACTION_GATT_DISCONNECTED);
+                updateNotification("Disconnected from GATT server.");
                 Log.i(TAG, "Disconnected from GATT server.");
             }
         }
@@ -110,7 +118,6 @@ public class BluetoothLeService extends Service {
         }
     };
 
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -125,13 +132,13 @@ public class BluetoothLeService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startID) {
 
-        Notification notification = new NotificationCompat.Builder(this, channelID)
-                .setContentTitle("Bluetooth Service")
-                .setContentText("Service is running...")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .build();
-        // Make this service a foreground service
-        startForeground(3, notification);
+//        Notification notification = new NotificationCompat.Builder(this, channelID)
+//                .setContentTitle("Bluetooth Service")
+//                .setContentText("Service is running...")
+//                .setSmallIcon(R.drawable.ic_launcher_foreground)
+//                .build();
+//        // Make this service a foreground service
+//        startForeground(notificationID, notification);
 
         if (intent != null && intent.getAction() != null) {
             if (intent.getAction().equals(START_ACTION)) {
@@ -143,30 +150,72 @@ public class BluetoothLeService extends Service {
         return START_NOT_STICKY;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "My Service Channel";
-            String description = "Channel for My Service";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(channelID, name, importance);
-            channel.setDescription(description);
-
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-            }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            CharSequence name = "My Service Channel";
+//            String description = "Channel for My Service";
+//            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+//            NotificationChannel channel = new NotificationChannel(channelID, name, importance);
+//            channel.setDescription(description);
+//
+//            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+//            if (notificationManager != null) {
+//                notificationManager.createNotificationChannel(channel);
+//            }
+//        }
+        NotificationChannel channel = new NotificationChannel(
+                channelID,
+                "Bluetooth Foreground Service Channel",
+                NotificationManager.IMPORTANCE_HIGH
+        );
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) {
+            manager.createNotificationChannel(channel);
         }
+
     }
 
     private void startService() {
         // Code to execute when the service is started
-        Log.i(TAG, "Service started");
+//        Log.i(TAG, "Service started");
+
+        if (!isServiceRunning) {
+            Notification notification = new NotificationCompat.Builder(this, channelID)
+                    .setContentTitle("Bluetooth Foreground Service")
+                    .setContentText("Bluetooth Foreground service is running")
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setOngoing(true)
+                    .build();
+
+            startForeground(notificationID, notification);
+            isServiceRunning = true;
+        }
+    }
+
+    private void updateNotification(String content) {
+        Notification notification = new NotificationCompat.Builder(this, channelID)
+                .setContentTitle("Bluetooth Foreground Service")
+                .setContentText(content)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setOngoing(true)
+                .build();
+
+        startForeground(notificationID, notification);
     }
 
     private void stopService() {
         // Code to execute when the service is stopped
-        Log.i(TAG, "Service stopped");
-        stopSelf();
+//        Log.i(TAG, "Service stopped");
+//        stopSelf();
+
+        if (isServiceRunning) {
+            stopForeground(true);
+            stopSelf();
+            isServiceRunning = false;
+        }
     }
 
     private void broadcastUpdate(final String action) {
@@ -237,7 +286,6 @@ public class BluetoothLeService extends Service {
             Log.w(TAG, "Device not found with provided address.  Unable to connect.");
             return false;
         }
-
     }
 
     public void disconnect() {
@@ -247,7 +295,6 @@ public class BluetoothLeService extends Service {
         }
         bluetoothGatt.disconnect();
     }
-
 
 
     public void printServiceAndCharacteristicUUIDs() {
@@ -260,7 +307,6 @@ public class BluetoothLeService extends Service {
 //        List<BluetoothGattService> services = bluetoothGatt.getServices();
 //        bluetoothGatt.discoverServices();
         List<BluetoothGattService> services = bluetoothGatt.getServices();
-
 
         for (BluetoothGattService service : services) {
             Log.d(TAG, "printServiceAndCharacteristicUUIDs: printing services");
@@ -331,5 +377,6 @@ public class BluetoothLeService extends Service {
 
         // Unregister the receiver
         unregisterReceiver(notificationReceiver);
+        isServiceRunning = false;
     }
 }

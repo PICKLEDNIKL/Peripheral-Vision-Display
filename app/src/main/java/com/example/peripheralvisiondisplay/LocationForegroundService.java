@@ -57,21 +57,15 @@ public class LocationForegroundService extends Service {
             boolean isButtonOn = sharedPref.getBoolean("isButtonOn", false);
 
             if (intent.getAction().equals(START_ACTION) && isButtonOn) {
+
                 startService();
-                Notification notification = new NotificationCompat.Builder(this, channelID)
-                        .setContentTitle("Location Foreground Service")
-                        .setContentText("Foreground service is running")
-                        .setSmallIcon(R.drawable.ic_launcher_foreground)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .setOngoing(true)
-                        .build();
-//                Notification notification = notificationBuilder.build();
-                startForeground(notificationID, notification);
+
             } else if (intent.getAction().equals(STOP_ACTION) || !isButtonOn) {
                 stopService();
-            } else if (intent.getAction().equals("com.example.peripheralvisiondisplay.NEW_NOTIFICATION")){
-                handleNewNotification(intent);
             }
+//            else if (intent.getAction().equals("com.example.peripheralvisiondisplay.NEW_NOTIFICATION")){
+//                handleNewNotification(intent);
+//            }
         }
         return START_NOT_STICKY;
     }
@@ -86,7 +80,7 @@ public class LocationForegroundService extends Service {
     private void createNotificationChannel() {
         NotificationChannel channel = new NotificationChannel(
                 channelID,
-                "Foreground Service Channel",
+                "Location Foreground Service Channel",
                 NotificationManager.IMPORTANCE_HIGH
         );
         NotificationManager manager = getSystemService(NotificationManager.class);
@@ -99,8 +93,20 @@ public class LocationForegroundService extends Service {
 
     private void startService() {
         if (!isServiceRunning) {
-            fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
+            Notification notification = new NotificationCompat.Builder(this, channelID)
+                    .setContentTitle("Location Foreground Service")
+                    .setContentText("Foreground service is running")
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setOngoing(true)
+                    .build();
+
+//            notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
+            startForeground(notificationID, notification);
+            isServiceRunning = true;
+
+            fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
             locationCallback = new LocationCallback() {
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
@@ -122,8 +128,6 @@ public class LocationForegroundService extends Service {
                 }
             };
 
-            isServiceRunning = true;
-
             LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
                     .setWaitForAccurateLocation(true)
                     .setMinUpdateIntervalMillis(500)
@@ -139,7 +143,7 @@ public class LocationForegroundService extends Service {
 
     private void stopService() {
         if (isServiceRunning) {
-            Log.d("LocationService", "stopService() called");
+//            Log.d("LocationService", "stopService() called");
             fusedLocationProviderClient.removeLocationUpdates(locationCallback);
             stopForeground(true);
             stopSelf();
@@ -162,40 +166,41 @@ public class LocationForegroundService extends Service {
         stopService();
     }
 
-    private void handleNewNotification(Intent intent) {
-        Log.d("ForegroundService", "handlenewnotification works");
-        // Retrieve notification data from the intent
-
-        String notificationText = intent.getStringExtra("notificationText");
-
-        // Update the notification content with the latest listened notification text
-        NotificationCompat.Builder notificationBuilder =
-                new NotificationCompat.Builder(this, channelID)
-                        .setContentTitle("Location Foreground Service")
-                        .setContentText(notificationText) // Set the latest notification text here
-                        .setSmallIcon(R.drawable.ic_launcher_foreground)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH);
-
-        Notification notification = notificationBuilder.build();
-        notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
-
-        startForeground(notificationID, notification);
-    }
+//    private void handleNewNotification(Intent intent) {
+//        Log.d("ForegroundService", "handlenewnotification works");
+//        // Retrieve notification data from the intent
+//
+//        String notificationText = intent.getStringExtra("notificationText");
+//
+//        // Update the notification content with the latest listened notification text
+//        NotificationCompat.Builder notificationBuilder =
+//                new NotificationCompat.Builder(this, channelID)
+//                        .setContentTitle("Location Foreground Service")
+//                        .setContentText(notificationText) // Set the latest notification text here
+//                        .setSmallIcon(R.drawable.ic_launcher_foreground)
+//                        .setPriority(NotificationCompat.PRIORITY_HIGH);
+//
+//        Notification notification = notificationBuilder.build();
+//        notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
+//
+//        startForeground(notificationID, notification);
+//    }
 
     private void updateNotification(String content) {
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelID)
+        Notification notification = new NotificationCompat.Builder(this, channelID)
                 .setContentTitle("Location Foreground Service")
                 .setContentText(content)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setOngoing(true);
+                .setOngoing(true)
+                .build();
 
-        Notification notification = notificationBuilder.build();
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        if (manager != null) {
-            manager.notify(notificationID, notification);
-        }
+        startForeground(notificationID, notification);
+
+//        Notification notification = notificationBuilder.build();
+//        NotificationManager manager = getSystemService(NotificationManager.class);
+//        if (manager != null) {
+//            manager.notify(notificationID, notification);
+//        }
     }
-
-
 }

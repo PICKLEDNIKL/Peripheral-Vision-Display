@@ -31,7 +31,6 @@ public class NotificationForegroundService extends Service {
 
     private boolean isServiceRunning = false;
 
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -65,7 +64,7 @@ public class NotificationForegroundService extends Service {
     private void createNotificationChannel() {
         NotificationChannel channel = new NotificationChannel(
                 channelID,
-                "Foreground Service Channel",
+                "Notification Foreground Service Channel",
                 NotificationManager.IMPORTANCE_HIGH
         );
         NotificationManager manager = getSystemService(NotificationManager.class);
@@ -76,17 +75,17 @@ public class NotificationForegroundService extends Service {
 
     private void startService() {
         if (!isServiceRunning) {
-            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, channelID)
+
+            Notification notification = new NotificationCompat.Builder(this, channelID)
                     .setContentTitle("Notification Foreground Service")
                     .setContentText("Foreground service is running")
                     .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setOngoing(true);
+                    .setOngoing(true)
+                    .build();
 
-            Notification notification = notificationBuilder.build();
             startForeground(notificationID, notification);
             isServiceRunning = true;
-
         }
     }
 
@@ -119,15 +118,16 @@ public class NotificationForegroundService extends Service {
         String notificationText = intent.getStringExtra("notificationText");
 
         // Update the notification content with the latest listened notification text
-        NotificationCompat.Builder notificationBuilder =
-                new NotificationCompat.Builder(this, channelID)
+        Notification notification = new NotificationCompat.Builder(this, channelID)
                         .setContentTitle("Notification Foreground Service")
                         .setContentText(notificationText) // Set the latest notification text here
                         .setSmallIcon(R.drawable.ic_launcher_foreground)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH);
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setOngoing(true)
+                        .build();
 
-        Notification notification = notificationBuilder.build();
-        notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
+//        Notification notification = notificationBuilder.build();
+//        notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
 
         startForeground(notificationID, notification);
     }
