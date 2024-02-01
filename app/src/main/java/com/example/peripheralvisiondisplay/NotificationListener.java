@@ -26,12 +26,19 @@ public class NotificationListener extends NotificationListenerService {
         if (isButtonOn) {
             // Forward the notification data to your foreground service
             String packageName = sbn.getPackageName();
+            //todo: figure out what to do with notifications that dont have tickertext
             if (sbn.getNotification().tickerText != null) {
                 String notificationText = sbn.getNotification().tickerText.toString();
                 Intent serviceIntent = new Intent(this, NotificationForegroundService.class);
                 serviceIntent.setAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
                 serviceIntent.putExtra("packageName", packageName);
                 serviceIntent.putExtra("notificationText", notificationText);
+
+                // Send a broadcast with the notification text
+                Intent broadcastIntent = new Intent();
+                broadcastIntent.setAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
+                broadcastIntent.putExtra("notificationText", notificationText);
+                sendBroadcast(broadcastIntent);
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(serviceIntent);
@@ -43,6 +50,39 @@ public class NotificationListener extends NotificationListenerService {
                 Log.d("notificationlistener", "notification doesnt have tickertext");
             }
         }
+//        if (isButtonOn) {
+//            // Check if the notification is new
+//            long postTime = sbn.getPostTime();
+//            long currentTime = System.currentTimeMillis();
+//            if (currentTime - postTime > 1000) { // Ignore notifications older than 1 second
+//                return;
+//            }
+//
+//            // Forward the notification data to your foreground service
+//            String packageName = sbn.getPackageName();
+//            if (sbn.getNotification().tickerText != null) {
+//                String notificationText = sbn.getNotification().tickerText.toString();
+//                Intent serviceIntent = new Intent(this, NotificationForegroundService.class);
+//                serviceIntent.setAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
+//                serviceIntent.putExtra("packageName", packageName);
+//                serviceIntent.putExtra("notificationText", notificationText);
+//
+//                // Send a broadcast with the notification text
+//                Intent broadcastIntent = new Intent();
+//                broadcastIntent.setAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
+//                broadcastIntent.putExtra("notificationText", notificationText);
+//                sendBroadcast(broadcastIntent);
+//
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                    startForegroundService(serviceIntent);
+//                } else {
+//                    startService(serviceIntent);
+//                }
+//                Log.d("notificationlistener", "seen notification");
+//            } else {
+//                Log.d("notificationlistener", "notification doesnt have tickertext");
+//            }
+//        }
     }
 
     @Override

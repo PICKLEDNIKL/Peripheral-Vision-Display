@@ -12,8 +12,10 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
@@ -57,8 +59,12 @@ public class BluetoothLeService extends Service {
     public static final String STOP_ACTION = "com.example.peripheralvisiondisplay.STOP_FOREGROUND_SERVICE";
 
     //https://github.com/adafruit/bluetooth-low-energy#tx-characteristic---0x0003
-    public final static UUID SERVICE_UUID = UUID.fromString("ADAF0001-4369-7263-7569-74507974686E");
-    public final static UUID CHARACTERISTIC_UUID = UUID.fromString("ADAF0003-4369-7263-7569-74507974686E");
+//    public final static UUID SERVICE_UUID = UUID.fromString("ADAF0001-4369-7263-7569-74507974686E");
+//    public final static UUID CHARACTERISTIC_UUID = UUID.fromString("ADAF0002-4369-7263-7569-74507974686E");
+    public final static UUID SERVICE_UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
+    public final static UUID CHARACTERISTIC_UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
+
+    private int notificationcount = 0;
 
     private final BluetoothGattCallback bluetoothGattCallback = new BluetoothGattCallback() {
         @Override
@@ -69,11 +75,37 @@ public class BluetoothLeService extends Service {
                 broadcastUpdate(ACTION_GATT_CONNECTED);
                 Log.i(TAG, "Connected to GATT server.");
                 // TODO: DISCOVER SERVICES IF I NEED TO???
+                bluetoothGatt.discoverServices();
+                printServiceAndCharacteristicUUIDs();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 // disconnected from the GATT Server
                 connectionState = STATE_DISCONNECTED;
                 broadcastUpdate(ACTION_GATT_DISCONNECTED);
                 Log.i(TAG, "Disconnected from GATT server.");
+            }
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                printServiceAndCharacteristicUUIDs();
+            } else {
+                Log.w(TAG, "onServicesDiscovered received: " + status);
+            }
+        }
+    };
+
+    private final BroadcastReceiver notificationReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if ("com.example.peripheralvisiondisplay.NEW_NOTIFICATION".equals(intent.getAction())) {
+                Log.d(TAG, "check if duped notifications");
+                String notificationText = intent.getStringExtra("notificationText");
+                notificationcount++;
+                if (notificationcount == 3)
+                    notificationcount = 1;
+                //todo:
+                sendMessage("NOTIF" + notificationcount);
             }
         }
     };
@@ -83,13 +115,18 @@ public class BluetoothLeService extends Service {
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
+
+        // Register the receiver
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
+        registerReceiver(notificationReceiver, filter);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startID) {
 
         Notification notification = new NotificationCompat.Builder(this, channelID)
-                .setContentTitle("My Service")
+                .setContentTitle("Bluetooth Service")
                 .setContentText("Service is running...")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .build();
@@ -195,10 +232,6 @@ public class BluetoothLeService extends Service {
             final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
             // connect to the GATT server on the device
             bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
-            Log.d(TAG, "Trying to create a new connection.");
-            if (bluetoothGatt != null) {
-                printServiceAndCharacteristicUUIDs(); // Call the method here
-            }
             return true;
         } catch (IllegalArgumentException exception) {
             Log.w(TAG, "Device not found with provided address.  Unable to connect.");
@@ -215,6 +248,8 @@ public class BluetoothLeService extends Service {
         bluetoothGatt.disconnect();
     }
 
+
+
     public void printServiceAndCharacteristicUUIDs() {
         if (bluetoothGatt == null) {
             Log.w(TAG, "BluetoothGatt not initialized");
@@ -222,9 +257,13 @@ public class BluetoothLeService extends Service {
         }
 
         // Get the list of services
+//        List<BluetoothGattService> services = bluetoothGatt.getServices();
+//        bluetoothGatt.discoverServices();
         List<BluetoothGattService> services = bluetoothGatt.getServices();
 
+
         for (BluetoothGattService service : services) {
+            Log.d(TAG, "printServiceAndCharacteristicUUIDs: printing services");
             // Print the service UUID
             Log.i(TAG, "Service UUID: " + service.getUuid().toString());
 
@@ -238,34 +277,44 @@ public class BluetoothLeService extends Service {
         }
     }
 
-    public void writeCharacteristic(String value) {
+    public void sendMessage(String message) {
+        Log.d(TAG, "sendMessage: sending message");
         if (bluetoothGatt == null) {
             Log.w(TAG, "BluetoothGatt not initialized");
             return;
         }
 
-        // Get the service
         BluetoothGattService service = bluetoothGatt.getService(SERVICE_UUID);
         if (service == null) {
             Log.w(TAG, "Service not found");
             return;
         }
 
-        // Get the characteristic
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(CHARACTERISTIC_UUID);
         if (characteristic == null) {
             Log.w(TAG, "Characteristic not found");
             return;
         }
 
-        // Set the value to the characteristic
-        characteristic.setValue(value);
+        // Check if the characteristic supports write
+        if ((characteristic.getProperties() & (BluetoothGattCharacteristic.PROPERTY_WRITE | BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE)) == 0) {
+            Log.w(TAG, "Characteristic does not support write");
+            return;
+        }
 
-        // Write the characteristic
+        // Check if the message is too large
+        if (message.getBytes().length > 20) {
+            Log.w(TAG, "Message is too large");
+            return;
+        }
+
+        characteristic.setValue(message);
         if (!bluetoothGatt.writeCharacteristic(characteristic)) {
             Log.w(TAG, "Failed to write characteristic");
         }
+        Log.d(TAG, "sendMessage: sent message");
     }
+
 
     private void close() {
         if (bluetoothGatt == null) {
@@ -273,5 +322,14 @@ public class BluetoothLeService extends Service {
         }
         bluetoothGatt.close();
         bluetoothGatt = null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // ... existing code ...
+
+        // Unregister the receiver
+        unregisterReceiver(notificationReceiver);
     }
 }
