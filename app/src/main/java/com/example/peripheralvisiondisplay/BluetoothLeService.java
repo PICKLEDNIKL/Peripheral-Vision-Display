@@ -139,10 +139,24 @@ public class BluetoothLeService extends Service {
 //                .build();
 //        // Make this service a foreground service
 //        startForeground(notificationID, notification);
-
+//
+//        if (intent != null && intent.getAction() != null) {
+//            if (intent.getAction().equals(START_ACTION)) {
+//                startService();
+//            } else if (intent.getAction().equals(STOP_ACTION)) {
+//                stopService();
+//            }
+//        }
+//        return START_NOT_STICKY;
         if (intent != null && intent.getAction() != null) {
             if (intent.getAction().equals(START_ACTION)) {
-                startService();
+                Notification notification = new NotificationCompat.Builder(this, channelID)
+                        .setContentTitle("Bluetooth Service")
+                        .setContentText("Service is running...")
+                        .setSmallIcon(R.drawable.ic_launcher_foreground)
+                        .build();
+                // Make this service a foreground service
+                startForeground(notificationID, notification);
             } else if (intent.getAction().equals(STOP_ACTION)) {
                 stopService();
             }
