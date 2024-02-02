@@ -30,6 +30,8 @@ import java.util.UUID;
 
 public class BluetoothLeService extends Service {
     // TODO: MAKE SURE TO CHANGE ALL OF THE LOGCAT TO USE THIS AS THE TAG AND MAKE THIS IN OTHER CLASSES
+    //todo: blacklist applications so that the notificaitons dont show from that app. maybe check if the notification is being updated. check waht would be a good cutoff for notification from the same app.
+    //todo: stop notificaitons from apps / squash notificaitons from apps.
     private final static String TAG = BluetoothLeService.class.getSimpleName();
 
     private BluetoothManager bluetoothManager;

@@ -12,9 +12,12 @@ import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
+import java.util.HashMap;
 import java.util.List;
 
 public class NotificationListener extends NotificationListenerService {
+
+    private HashMap<String, String> lastSentNotifications = new HashMap<>();
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
@@ -29,6 +32,18 @@ public class NotificationListener extends NotificationListenerService {
             //todo: figure out what to do with notifications that dont have tickertext
             if (sbn.getNotification().tickerText != null) {
                 String notificationText = sbn.getNotification().tickerText.toString();
+
+                // Check if the new notification is the same as the last sent notification
+                if (notificationText.equals(lastSentNotifications.get(packageName))) {
+                    // Ignore the new notification
+                    return;
+                }
+
+                // Update the last sent notification for the application
+                lastSentNotifications.put(packageName, notificationText);
+
+
+
                 Intent serviceIntent = new Intent(this, NotificationForegroundService.class);
                 serviceIntent.setAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
                 serviceIntent.putExtra("packageName", packageName);
