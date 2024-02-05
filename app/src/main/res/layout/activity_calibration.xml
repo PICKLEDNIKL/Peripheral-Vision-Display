@@ -20,7 +20,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="How to calibrate phone orientation: \n    1. Hold phone in front of you and turn until facing North. \n    2. Press ''start calibration'' button. \n    3. 10 second timer will start. \n    4. Place phone into desired location. \n    5. Timer will end and the phone will now be calibrated."
+        android:text="How to calibrate phone orientation: \n    1. Hold phone in front of you and turn until facing ''True North'' (355 - 5 degrees), indicated by GREEN text. \n    2. Press ''start calibration'' button. \n    3. 10 second timer will start. \n    4. Place phone into desired location. \n    5. Timer will end and the phone will now be calibrated."
         android:layout_gravity="center"
         android:textColor="@color/black"
         android:layout_marginTop="40dp"

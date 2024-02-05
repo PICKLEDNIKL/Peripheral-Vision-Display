@@ -3,6 +3,7 @@ package com.example.peripheralvisiondisplay;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -123,7 +124,7 @@ public class BluetoothLeService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        createNotificationChannel();
+//        createNotificationChannel();
 
         // Register the receiver
         IntentFilter filter = new IntentFilter();
@@ -134,52 +135,21 @@ public class BluetoothLeService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startID) {
 
-//        Notification notification = new NotificationCompat.Builder(this, channelID)
-//                .setContentTitle("Bluetooth Service")
-//                .setContentText("Service is running...")
-//                .setSmallIcon(R.drawable.ic_launcher_foreground)
-//                .build();
-//        // Make this service a foreground service
-//        startForeground(notificationID, notification);
-//
-//        if (intent != null && intent.getAction() != null) {
-//            if (intent.getAction().equals(START_ACTION)) {
-//                startService();
-//            } else if (intent.getAction().equals(STOP_ACTION)) {
-//                stopService();
-//            }
-//        }
-//        return START_NOT_STICKY;
-        if (intent != null && intent.getAction() != null) {
-            if (intent.getAction().equals(START_ACTION)) {
-                Notification notification = new NotificationCompat.Builder(this, channelID)
-                        .setContentTitle("Bluetooth Service")
-                        .setContentText("Service is running...")
-                        .setSmallIcon(R.drawable.ic_launcher_foreground)
-                        .build();
-                // Make this service a foreground service
-                startForeground(notificationID, notification);
-            } else if (intent.getAction().equals(STOP_ACTION)) {
-                stopService();
-            }
-        }
+        createNotificationChannel();
+        Notification notification = new NotificationCompat.Builder(this, channelID)
+                .setContentTitle("Bluetooth Service")
+                .setContentText("Service is running...")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+//                .setContentIntent(pendingIntent)
+                .build();
+        // Make this service a foreground service
+        startForeground(notificationID, notification);
         return START_NOT_STICKY;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void createNotificationChannel() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            CharSequence name = "My Service Channel";
-//            String description = "Channel for My Service";
-//            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-//            NotificationChannel channel = new NotificationChannel(channelID, name, importance);
-//            channel.setDescription(description);
-//
-//            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-//            if (notificationManager != null) {
-//                notificationManager.createNotificationChannel(channel);
-//            }
-//        }
+
         NotificationChannel channel = new NotificationChannel(
                 channelID,
                 "Bluetooth Foreground Service Channel",

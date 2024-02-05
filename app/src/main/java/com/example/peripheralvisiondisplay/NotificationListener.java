@@ -43,7 +43,6 @@ public class NotificationListener extends NotificationListenerService {
                 lastSentNotifications.put(packageName, notificationText);
 
 
-
                 Intent serviceIntent = new Intent(this, NotificationForegroundService.class);
                 serviceIntent.setAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
                 serviceIntent.putExtra("packageName", packageName);
