@@ -8,7 +8,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Build;
 import android.os.IBinder;
@@ -32,7 +37,7 @@ import java.util.List;
 //todo need to make it so that if the user has walked the wrong way, it can update the directions to accomodate the user.
 //todo: also need to make it so that it tells the user if they are walking the wrong way. i may need to get the previous step information for them to get to the destination of that step before they can continue.
 //todo: check if the user is following the path
-public class DirectionForegroundService extends Service {
+public class DirectionForegroundService extends Service implements SensorEventListener {
 
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
@@ -53,6 +58,23 @@ public class DirectionForegroundService extends Service {
 
     private String apikey = BuildConfig.apiKey;
 
+    private BluetoothLeService mBluetoothLeService;
+
+    private static final float BEARING_THRESHOLD = 90; // Adjust this value based on your requirements
+
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private Sensor magnetometer;
+    private float[] lastAccelerometer = new float[3];
+    private float[] lastMagnetometer = new float[3];
+    private boolean isAccelerometerSet = false;
+    private boolean isMagnetometerSet = false;
+    private float[] rotationMatrix = new float[9];
+    private float[] orientation = new float[3];
+    private float azimuthInDegrees = 0;
+
+    private static final float ALPHA = 0.20f; // if ALPHA = 1 OR 0, no filter applies.
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -64,6 +86,92 @@ public class DirectionForegroundService extends Service {
 
         IntentFilter filter2 = new IntentFilter("LocationUpdates");
         registerReceiver(locationUpdateReceiver, filter2);
+
+        // Initialize the SensorManager and sensors
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+
+        // Register for sensor updates
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    // Create the lowPassFilter method
+    private float lowPassFilter(float new_value, float last_value) {
+        return last_value * (1.0f - ALPHA) + new_value * ALPHA;
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor == accelerometer) {
+//            System.arraycopy(event.values, 0, lastAccelerometer, 0, event.values.length);
+            for (int i = 0; i < 3; i++) {
+                lastAccelerometer[i] = lowPassFilter(event.values[i], lastAccelerometer[i]);
+            }
+            isAccelerometerSet = true;
+        } else if (event.sensor == magnetometer) {
+//            System.arraycopy(event.values, 0, lastMagnetometer, 0, event.values.length);
+            for (int i = 0; i < 3; i++) {
+                lastMagnetometer[i] = lowPassFilter(event.values[i], lastMagnetometer[i]);
+            }
+            isMagnetometerSet = true;
+        }
+
+
+        // Retrieve the calibrated north setting
+        SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
+        float calibratedNorth = sharedPref.getFloat("north", 0);
+
+        if (isAccelerometerSet && isMagnetometerSet) {
+            SensorManager.getRotationMatrix(rotationMatrix, null, lastAccelerometer, lastMagnetometer);
+            SensorManager.getOrientation(rotationMatrix, orientation);
+            float azimuthInRadians = orientation[0];
+            azimuthInDegrees = (float) ((Math.toDegrees(azimuthInRadians) + 360) % 360);
+        }
+
+        // Calculate the user's current bearing
+        float userBearing = (azimuthInDegrees - calibratedNorth + 360) % 360;
+        float nextStepBearing = 0;
+        // Check if currentLatLng and currentStepEndLocation are not null
+        if (currentLatLng != null && currentStepEndLocation != null) {
+            // Calculate the bearing towards the next step
+            nextStepBearing = calculateBearing(currentLatLng, currentStepEndLocation);
+            Log.d("TAG", "next step bearing: " + nextStepBearing);
+            // ... existing code ...
+        } else {
+            // Handle the situation when currentLatLng or currentStepEndLocation is null
+            // For example, you can log an error message
+            Log.e("DirectionForegroundService", "currentLatLng or currentStepEndLocation is null");
+        }
+
+        // Check if the user is facing the wrong direction
+        if (Math.abs(userBearing - nextStepBearing) > BEARING_THRESHOLD) {
+            if (mBluetoothLeService != null) {
+                Log.e("TAG", "turn");
+                mBluetoothLeService.sendMessage("TURN");
+
+            } else {
+                // Handle the situation when mBluetoothLeService is null
+                // For example, you can log an error message
+                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage turn ");
+            }
+        } else {
+            if (mBluetoothLeService != null) {
+                Log.e("TAG", "str");
+                mBluetoothLeService.sendMessage("STR");
+            } else {
+                // Handle the situation when mBluetoothLeService is null
+                // For example, you can log an error message
+                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
+            }
+        }
+
+        // ... existing code ...
+    }
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Handle changes in sensor accuracy
     }
 
     @Override
@@ -143,6 +251,7 @@ public class DirectionForegroundService extends Service {
                 if (currentStepString == null){
                     currentStepString = "You have reached your destination.";
                 }
+                mBluetoothLeService.sendDirectionInfo(currentStepString);
 
                 currentStepEndLocation = getNextStepEndLocation();
                 currentStepIndex++;
@@ -165,8 +274,47 @@ public class DirectionForegroundService extends Service {
 //                new DirectionsTask(DirectionForegroundService.this).execute(url);
             }
 
-            //todo: if the user is walking away from the direction = mention to the user to turn back. - use end location of current step.
-
+//            // Retrieve the calibrated north setting
+//            SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
+//            float calibratedNorth = sharedPref.getFloat("north", 0);
+////            float azimuthInDegrees = sharedPref.getFloat("azimuthInDegrees", 0);
+//
+//            // Calculate the user's current bearing
+//            float userBearing = (azimuthInDegrees - calibratedNorth + 360) % 360;
+//            float nextStepBearing = 0;
+//            // Check if currentLatLng and currentStepEndLocation are not null
+//            if (currentLatLng != null && currentStepEndLocation != null) {
+//                // Calculate the bearing towards the next step
+//                nextStepBearing = calculateBearing(currentLatLng, currentStepEndLocation);
+//
+//                // ... existing code ...
+//            } else {
+//                // Handle the situation when currentLatLng or currentStepEndLocation is null
+//                // For example, you can log an error message
+//                Log.e("DirectionForegroundService", "currentLatLng or currentStepEndLocation is null");
+//            }
+//
+//            // Check if the user is facing the wrong direction
+//            if (Math.abs(userBearing - nextStepBearing) > BEARING_THRESHOLD) {
+//                if (mBluetoothLeService != null) {
+//                    Log.e("TAG", "turn");
+//                    mBluetoothLeService.sendMessage("TURN");
+//
+//                } else {
+//                    // Handle the situation when mBluetoothLeService is null
+//                    // For example, you can log an error message
+//                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage turn ");
+//                }
+//            } else {
+//                if (mBluetoothLeService != null) {
+//                    Log.e("TAG", "str");
+//                    mBluetoothLeService.sendMessage("STR");
+//                } else {
+//                    // Handle the situation when mBluetoothLeService is null
+//                    // For example, you can log an error message
+//                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
+//                }
+//            }
 
         }
     };
@@ -185,6 +333,15 @@ public class DirectionForegroundService extends Service {
                 currentStepIndex = 0;
 
                 currentStepString = stepsList.get(currentStepIndex);
+//                mBluetoothLeService.sendDirectionInfo(currentStepString);
+                if (mBluetoothLeService != null) {
+                    mBluetoothLeService.sendDirectionInfo(currentStepString);
+                } else {
+                    // Handle the situation when mBluetoothLeService is null
+                    // For example, you can log an error message
+                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for stepdata");
+                }
+
                 currentStepEndLocation = stepsEndLocationList.get(currentStepIndex);
                 currentStepIndex++;
                 createNotification("Step "+ currentStepIndex + " : " + currentStepString);
@@ -280,6 +437,16 @@ public class DirectionForegroundService extends Service {
         return distance * 1000;
     }
 
+    private float calculateBearing(LatLng point1, LatLng point2) {
+        double lat1 = Math.toRadians(point1.latitude);
+        double lat2 = Math.toRadians(point2.latitude);
+        double deltaLng = Math.toRadians(point2.longitude - point1.longitude);
+
+        double y = Math.sin(deltaLng) * Math.cos(lat2);
+        double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+
+        return (float) ((Math.toDegrees(Math.atan2(y, x)) + 360) % 360);
+    }
 
     private void createNotification(String message) {
         Notification notification = new NotificationCompat.Builder(this, channelID)

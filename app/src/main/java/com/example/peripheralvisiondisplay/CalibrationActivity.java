@@ -13,6 +13,7 @@ import android.os.CountDownTimer;
 import android.os.Vibrator;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -37,6 +38,9 @@ public class CalibrationActivity extends AppCompatActivity implements SensorEven
     private MediaPlayer mediaPlayer;
     private TextView directionTextView;
     private TextView statusTextView;
+    private TextView accuracyTextView;
+
+    private boolean sensorbool = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +54,7 @@ public class CalibrationActivity extends AppCompatActivity implements SensorEven
         mediaPlayer = MediaPlayer.create(this, R.raw.sound); // replace with your sound file
         directionTextView = findViewById(R.id.currentOrientation); // replace with your TextView id
         statusTextView = findViewById(R.id.status);
+        accuracyTextView = findViewById(R.id.accuracy);
 
         // Start the sensor listeners here
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
@@ -70,14 +75,14 @@ public class CalibrationActivity extends AppCompatActivity implements SensorEven
 
             public void onFinish() {
                 sensorManager.unregisterListener(CalibrationActivity.this);
-                float averageReading = 0;
-                for (float reading : readings) {
-                    averageReading += reading;
-                }
-                averageReading /= readings.size();
+//                float averageReading = 0;
+//                for (float reading : readings) {
+//                    averageReading += reading;
+//                }
+//                averageReading /= readings.size();
                 SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
-                editor.putFloat("north", averageReading);
+                editor.putFloat("north", azimuthInDegrees);
                 editor.apply();
 
                 statusTextView.setText("Calibration status: Completed");
@@ -88,38 +93,47 @@ public class CalibrationActivity extends AppCompatActivity implements SensorEven
         }.start();
     }
 
+    // sensorbool is used to half the number of sensor changes that are recognised. this should make it easier for the user to calibrate the device
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor == accelerometer) {
-            System.arraycopy(event.values, 0, lastAccelerometer, 0, event.values.length);
-            isAccelerometerSet = true;
-        } else if (event.sensor == magnetometer) {
-            System.arraycopy(event.values, 0, lastMagnetometer, 0, event.values.length);
-            isMagnetometerSet = true;
-        }
-
-        if (isAccelerometerSet && isMagnetometerSet) {
-            SensorManager.getRotationMatrix(rotationMatrix, null, lastAccelerometer, lastMagnetometer);
-            SensorManager.getOrientation(rotationMatrix, orientation);
-            float azimuthInRadians = orientation[0];
-            azimuthInDegrees = (float)(Math.toDegrees(azimuthInRadians)+360)%360;
-            readings.add(azimuthInDegrees);
-
-            // Calculate the bearing
-            float floatBearing = (azimuthInDegrees + 360) % 360;
-            int bearing = Math.round(floatBearing);
-
-            // Update the direction TextView
-            int color;
-            String orientationString = getDirectionFromDegrees(azimuthInDegrees);
-            if (orientationString.equals("True North")) {
-                color = Color.GREEN;
-            } else {
-                color = Color.RED;
+        if (sensorbool) {
+            if (event.sensor == accelerometer) {
+                System.arraycopy(event.values, 0, lastAccelerometer, 0, event.values.length);
+                isAccelerometerSet = true;
+            } else if (event.sensor == magnetometer) {
+                System.arraycopy(event.values, 0, lastMagnetometer, 0, event.values.length);
+                isMagnetometerSet = true;
             }
-            directionTextView.setText("Current Orientation: " + orientationString + "\nBearing: " + bearing);
-            directionTextView.setTextColor(color);
+
+            if (isAccelerometerSet && isMagnetometerSet) {
+                SensorManager.getRotationMatrix(rotationMatrix, null, lastAccelerometer, lastMagnetometer);
+                SensorManager.getOrientation(rotationMatrix, orientation);
+                float azimuthInRadians = orientation[0];
+                azimuthInDegrees = (float) (Math.toDegrees(azimuthInRadians) + 360) % 360;
+                readings.add(azimuthInDegrees);
+
+                // Calculate the bearing
+                float floatBearing = (azimuthInDegrees + 360) % 360;
+                int bearing = Math.round(floatBearing);
+
+                // Update the direction TextView
+                int color;
+                String orientationString = getDirectionFromDegrees(azimuthInDegrees);
+                if (orientationString.equals("True North")) {
+                    color = Color.GREEN;
+                } else {
+                    color = Color.RED;
+                }
+                directionTextView.setText("Current Orientation: " + orientationString + "\nBearing: " + bearing);
+                directionTextView.setTextColor(color);
+            }
         }
+        sensorbool = !sensorbool;
+        // Store the azimuthInDegrees value
+        SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putFloat("azimuthInDegrees", azimuthInDegrees);
+        editor.apply();
     }
 
     private String getDirectionFromDegrees(float degrees) {
@@ -145,30 +159,22 @@ public class CalibrationActivity extends AppCompatActivity implements SensorEven
         return "Unknown";
     }
 
-//            // Update the direction TextView
-//            if (azimuthInDegrees >= 345 || azimuthInDegrees < 15) {
-//                directionTextView.setText("Current Orientation: North");
-//            } else if (azimuthInDegrees >= 15 && azimuthInDegrees < 75) {
-//                directionTextView.setText("Current Orientation: North East");
-//            } else if (azimuthInDegrees >= 75 && azimuthInDegrees < 105) {
-//                directionTextView.setText("Current Orientation: East");
-//            } else if (azimuthInDegrees >= 105 && azimuthInDegrees < 165) {
-//                directionTextView.setText("Current Orientation: South East");
-//            } else if (azimuthInDegrees >= 165 && azimuthInDegrees < 195) {
-//                directionTextView.setText("Current Orientation: South");
-//            } else if (azimuthInDegrees >= 195 && azimuthInDegrees < 255) {
-//                directionTextView.setText("Current Orientation: South West");
-//            } else if (azimuthInDegrees >= 255 && azimuthInDegrees < 285) {
-//                directionTextView.setText("Current Orientation: West");
-//            } else if (azimuthInDegrees >= 285 && azimuthInDegrees < 345) {
-//                directionTextView.setText("Current Orientation: North West");
-//            }
-//        }
-//    }
-
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // Handle changes in sensor accuracy
+        switch (accuracy) {
+            case SensorManager.SENSOR_STATUS_ACCURACY_HIGH:
+                accuracyTextView.setText("Sensor Accuracy: High");
+                break;
+            case SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM:
+                accuracyTextView.setText("Sensor Accuracy: Medium");
+                break;
+            case SensorManager.SENSOR_STATUS_ACCURACY_LOW:
+                accuracyTextView.setText("Sensor Accuracy: Low");
+                break;
+            case SensorManager.SENSOR_STATUS_UNRELIABLE:
+                accuracyTextView.setText("Sensor Accuracy: Unreliable");
+                break;
+        }
     }
-
 }

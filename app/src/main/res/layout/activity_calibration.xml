@@ -37,6 +37,17 @@
         android:layout_marginTop="70dp"
         android:textSize="60px"/>
 
+    <TextView
+        android:id="@+id/accuracy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sensor Accuracy: "
+        android:layout_gravity="center"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginTop="30dp"
+        android:textSize="60px"/>
+
     <!--calibration button-->
     <Button
         android:id="@+id/calibrateButton"

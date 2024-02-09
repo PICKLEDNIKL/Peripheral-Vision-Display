@@ -71,7 +71,7 @@ public class BluetoothLeService extends Service {
     public final static UUID SERVICE_UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
     public final static UUID CHARACTERISTIC_UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
 
-    private int notificationcount = 0;
+//    private int notificationcount = 0;
 
     private boolean isServiceRunning = false;
 
@@ -112,14 +112,29 @@ public class BluetoothLeService extends Service {
             if ("com.example.peripheralvisiondisplay.NEW_NOTIFICATION".equals(intent.getAction())) {
                 Log.d(TAG, "check if duped notifications");
                 String notificationText = intent.getStringExtra("notificationText");
-                notificationcount++;
-                if (notificationcount == 3)
-                    notificationcount = 1;
+//                notificationcount++;
+//                if (notificationcount == 3)
+//                    notificationcount = 1;
                 //todo:
-                sendMessage("NOTIF" + notificationcount);
+//                sendMessage("NOTIF" + notificationcount);
+                sendMessage("NOTIF");
             }
         }
     };
+
+    public void sendDirectionInfo(String direction) {
+        if (direction != null){
+            if (direction.toLowerCase().contains("left")){
+                sendMessage("LEFT");
+            } else if (direction.toLowerCase().contains("right")){
+                sendMessage("RIGHT");
+            } else if (direction.toLowerCase().contains("straight")){
+                sendMessage("STR");
+            } else{
+                sendMessage("NOTIF");
+            }
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -215,7 +230,6 @@ public class BluetoothLeService extends Service {
         }
     }
 
-
     @Override
     public IBinder onBind(Intent intent) {
         return binder;
@@ -243,7 +257,6 @@ public class BluetoothLeService extends Service {
         }
         return true;
     }
-
 
     public boolean connect(final String address) {
         if (bluetoothAdapter == null || address == null) {
