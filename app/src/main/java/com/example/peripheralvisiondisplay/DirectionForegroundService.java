@@ -65,10 +65,16 @@ public class DirectionForegroundService extends Service implements SensorEventLi
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private Sensor magnetometer;
+    private Sensor gyroscope;
+    private Sensor stepDetector;
     private float[] lastAccelerometer = new float[3];
     private float[] lastMagnetometer = new float[3];
+    private float[] lastgyroscope = new float[3];
+
     private boolean isAccelerometerSet = false;
     private boolean isMagnetometerSet = false;
+    private boolean isGyroscopeSet = false;
+
     private float[] rotationMatrix = new float[9];
     private float[] orientation = new float[3];
     private float azimuthInDegrees = 0;
@@ -91,10 +97,15 @@ public class DirectionForegroundService extends Service implements SensorEventLi
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        stepDetector = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
 
         // Register for sensor updates
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, stepDetector, SensorManager.SENSOR_DELAY_NORMAL);
+
     }
 
     // Create the lowPassFilter method
@@ -116,11 +127,62 @@ public class DirectionForegroundService extends Service implements SensorEventLi
                 lastMagnetometer[i] = lowPassFilter(event.values[i], lastMagnetometer[i]);
             }
             isMagnetometerSet = true;
+        } else if (event.sensor == gyroscope) {
+            for (int i = 0; i < 3; i++) {
+                lastgyroscope[i] = lowPassFilter(event.values[i], lastgyroscope[i]);
+            }
+            float pitch = event.values[1]; // Assuming that the pitch is the second value
+
+            // Step 1: Detect the top of the smartphone
+            boolean isUpsideDown = pitch > 90 || pitch < -90; // Adjust the threshold as needed
+
+            // Step 2: Detect the screen of the smartphone and the user's movement direction
+            // This depends on how you are processing the accelerometer data to detect steps
+            // Here is a simple example that checks if the device is moving up or down
+            boolean isMovingUp = lastAccelerometer[2] > 0; // Assuming that the z-axis is the third value
+            boolean isScreenFacingUser = isUpsideDown ? !isMovingUp : isMovingUp;
+
+            // Step 3: Align the smartphone orientation and user orientation
+            if (!isScreenFacingUser) {
+                azimuthInDegrees = (azimuthInDegrees + 180) % 360;
+            }
         }
+
+        // Assume that magnetometerReadings is a list of float arrays, where each array contains the x, y, and z magnetometer readings
+        List<float[]> magnetometerReadings = new ArrayList<>();
+
+        float minX = Float.MAX_VALUE;
+        float minY = Float.MAX_VALUE;
+        float minZ = Float.MAX_VALUE;
+        float maxX = Float.MIN_VALUE;
+        float maxY = Float.MIN_VALUE;
+        float maxZ = Float.MIN_VALUE;
+
+        for (float[] reading : magnetometerReadings) {
+            minX = Math.min(minX, reading[0]);
+            minY = Math.min(minY, reading[1]);
+            minZ = Math.min(minZ, reading[2]);
+            maxX = Math.max(maxX, reading[0]);
+            maxY = Math.max(maxY, reading[1]);
+            maxZ = Math.max(maxZ, reading[2]);
+        }
+
+        float offsetX = (maxX + minX) / 2;
+        float offsetY = (maxY + minY) / 2;
+        float offsetZ = (maxZ + minZ) / 2;
+
+        // Store the offsets in SharedPreferences
+        SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putFloat("offsetX", offsetX);
+        editor.putFloat("offsetY", offsetY);
+        editor.putFloat("offsetZ", offsetZ);
+        editor.apply();
+
 
 
         // Retrieve the calibrated north setting
-        SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
+//        SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
         float calibratedNorth = sharedPref.getFloat("north", 0);
 
         if (isAccelerometerSet && isMagnetometerSet) {

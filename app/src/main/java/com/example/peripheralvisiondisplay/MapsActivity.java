@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEventListener;
@@ -51,6 +52,7 @@ import com.google.android.libraries.places.api.model.RectangularBounds;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.Arrays;
 
@@ -77,6 +79,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean isCameraMoved = false;
 //    private boolean isFirstLocationUpdate = true;
 
+    private static final String PREFS_NAME = "HomeActivityPrefs";
+    private static final String PREFS_TOGGLE_LOCATION_SERVICE = "toggleLocationService";
+
 
     //just added
     private SensorManager sensorManager;
@@ -91,10 +96,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final float ALPHA = 0.20f; // if ALPHA = 1 OR 0, no filter applies.
 
+    BottomNavigationView bottomNavigationView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Retrieve the state of toggleLocationService from SharedPreferences
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean toggleLocationService = prefs.getBoolean(PREFS_TOGGLE_LOCATION_SERVICE, false);
 
         binding = ActivityMapsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -112,6 +123,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         calibrationButton = findViewById(R.id.switchToCalibrationButton);
         calibrationButton.setOnClickListener(view -> switchToCalibrationActivity());
+
+        bottomNavigationView = findViewById(R.id.bottom_menu);
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            Intent intent;
+            int itemId = item.getItemId();
+            if (itemId == R.id.home) {
+                intent = new Intent(MapsActivity.this, HomeActivity.class);
+                startActivity(intent);
+                return true;
+            } else if (itemId == R.id.map) {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    if (toggleLocationService) {
+                        intent = new Intent(MapsActivity.this, MapsActivity.class);
+                        startActivity(intent);
+                    } else {
+                        Toast.makeText(this, "Please start the location service first", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                else
+                {
+                    Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            } else if (itemId == R.id.bluetooth) {
+                intent = new Intent(MapsActivity.this, BluetoothActivity.class);
+                startActivity(intent);
+                return true;
+            }
+            return false;
+        });
 
         // Initialize the SDK
         Places.initialize(getApplicationContext(), apikey);
@@ -148,6 +189,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         IntentFilter filter = new IntentFilter("RecalculatePath");
         registerReceiver(recalculatePathReceiver, filter);
+
+
     }
 
     @Override
@@ -167,7 +210,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.getUiSettings().setMapToolbarEnabled(true);
             mMap.setMyLocationEnabled(true);
             mMap.getUiSettings().setMyLocationButtonEnabled(true);
-
 
         } else {
             // Handle location permission denied

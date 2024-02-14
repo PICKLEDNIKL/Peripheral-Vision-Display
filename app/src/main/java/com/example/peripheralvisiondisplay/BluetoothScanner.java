@@ -92,8 +92,8 @@ public class BluetoothScanner extends ListActivity {
             if (DEVICE_NAME.equals(device.getName()) && DEVICE_ADDRESS.equals(device.getAddress())) {
                 Log.d(TAG, "Found the target device, stopping scan.");
                 Log.d(TAG, "Device: " + device.getName() + ", Address: " + device.getAddress());
-                bluetoothLeScanner.stopScan(leScanCallback);
-                scanning = false;
+//                bluetoothLeScanner.stopScan(leScanCallback);
+//                scanning = false;
 //                connectToDevice(device); // Connect to the device
             }
             else {

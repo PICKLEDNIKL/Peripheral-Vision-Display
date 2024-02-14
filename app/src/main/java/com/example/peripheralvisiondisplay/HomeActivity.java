@@ -1,13 +1,10 @@
 package com.example.peripheralvisiondisplay;
 
-import android.accessibilityservice.AccessibilityService;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
@@ -19,34 +16,30 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.LocationRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.Manifest;
-import android.widget.TextView;
 import android.widget.Toast;
-import android.app.AppOpsManager;
-import android.content.Context;
 import android.os.Process;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-public class MainActivity extends AppCompatActivity {
+import com.example.peripheralvisiondisplay.databinding.ActivityMainBinding;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+public class HomeActivity extends AppCompatActivity {
 //TODO: MAKE IT SO THAT WHEN I LOOK FOR THE DEVICE, I DO IT BY NAME AND BY MAC ADDRESS. HOPEFULLY TX ON CIRCUIT PYTHON IS CORRECT?
     // TODO: MIGHT NEED TO ADD ANOTHER LAYOUT FOR BLUETOOTH CONNECTION WHICH WILL INCLUDE SEARCHING FOR THE DEVICE AND THEN CONNECTING TO IT. BUTTONS ARE NEEDED AS THE WAY I AM DOING IT NOW DOESNT ACCOUNT FOR THE DEVICE ALREADY HAVING BLUETOOTH ON AND SO DOESNT SCAN FOR DEVICES UNTIL TURNED OFF AND BACK ON.
     private static final int REQUEST_BLUETOOTH_SCAN_PERMISSION = 1;
     Button notificationServiceButton;
     Button locationServiceButton;
-    //    Button stopServiceButton;
-    Button switchToMapsActivityButton;
+    BottomNavigationView bottomNavigationView;
     //    TextView statusText;
     private static final int REQUEST_LOCATION_PERMISSION = 1001;
     int locationPermissionCount = 0;
@@ -60,11 +53,17 @@ public class MainActivity extends AppCompatActivity {
     private String deviceAddress = "D7:0B:99:6B:B6:D7";
     private boolean bound = false;
 
+    private static final String PREFS_NAME = "HomeActivityPrefs";
+//    private static final String PREFS_ONCREATE_EXECUTED = "onCreateExecuted";
+    private static final String PREFS_TOGGLE_LOCATION_SERVICE = "toggleLocationService";
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_home);
 
         notificationServiceButton = findViewById(R.id.notificationServiceButton);
         notificationServiceButton.setOnClickListener(view -> toggleNotificationService());
@@ -72,8 +71,36 @@ public class MainActivity extends AppCompatActivity {
         locationServiceButton = findViewById(R.id.locationServiceButton);
         locationServiceButton.setOnClickListener(view -> toggleLocationService());
 
-        switchToMapsActivityButton = findViewById(R.id.switchToMapsActivityButton);
-        switchToMapsActivityButton.setOnClickListener(view -> switchToMapsActivity());
+
+        bottomNavigationView = findViewById(R.id.bottom_menu);
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            Intent intent;
+            int itemId = item.getItemId();
+            if (itemId == R.id.home) {
+                intent = new Intent(HomeActivity.this, HomeActivity.class);
+                startActivity(intent);
+                return true;
+            } else if (itemId == R.id.map) {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    if (toggleLocationService) {
+                        intent = new Intent(HomeActivity.this, MapsActivity.class);
+                        startActivity(intent);
+                    } else {
+                        Toast.makeText(this, "Please start the location service first", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                else
+                {
+                    Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            } else if (itemId == R.id.bluetooth) {
+                intent = new Intent(HomeActivity.this, BluetoothActivity.class);
+                startActivity(intent);
+                return true;
+            }
+            return false;
+        });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
@@ -99,17 +126,56 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         registerReceiver(bluetoothStateReceiver, filter);
 
-        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(gattServiceIntent);
-        } else {
-            startService(gattServiceIntent);
+
+//        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            startForegroundService(gattServiceIntent);
+//        } else {
+//            startService(gattServiceIntent);
+//        }
+//        bindService(gattServiceIntent, serviceConnection, BIND_AUTO_CREATE);
+
+//        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+//        boolean onCreateExecuted = prefs.getBoolean(PREFS_ONCREATE_EXECUTED, false);
+//
+//        if (!onCreateExecuted) {
+//            // This code will only be executed once
+//            Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                startForegroundService(gattServiceIntent);
+//            } else {
+//                startService(gattServiceIntent);
+//            }
+//            bindService(gattServiceIntent, serviceConnection, BIND_AUTO_CREATE);
+//
+//            // Save the flag in SharedPreferences
+//            SharedPreferences.Editor editor = prefs.edit();
+//            editor.putBoolean(PREFS_ONCREATE_EXECUTED, true);
+//            editor.apply();
+//        }
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
         }
-        bindService(gattServiceIntent, serviceConnection, BIND_AUTO_CREATE);
-//        startService(gattServiceIntent);
 
+        if (!isServiceRunning(BluetoothLeService.class)) {
+            Intent serviceIntent = new Intent(this, BluetoothLeService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+            } else {
+                startService(serviceIntent);
+            }
+        }
+    }
 
-
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private final BroadcastReceiver bluetoothStateReceiver = new BroadcastReceiver() {
@@ -148,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
                     finish();
                 }
                 bound = true;
-                bluetoothService.connect(deviceAddress);
+//                bluetoothService.connect(deviceAddress);
                 Log.e("serviceconnected", "conencted to bluetooth service");
             }
         }
@@ -184,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(gattUpdateReceiver, makeGattUpdateIntentFilter());
         if (bluetoothService != null) {
             final boolean result = bluetoothService.connect(deviceAddress);
-            Log.d("MainActivity", "Connect request result=" + result);
+            Log.d("HomeActivity", "Connect request result=" + result);
         }
     }
 
@@ -333,22 +399,11 @@ public class MainActivity extends AppCompatActivity {
                 editor.apply();
             }
         }
-    }
-
-    private void switchToMapsActivity()
-    {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            if (toggleLocationService) {
-                Intent intent = new Intent(this, MapsActivity.class);
-                startActivity(intent);
-            } else {
-                Toast.makeText(this, "Please start the location service first", Toast.LENGTH_SHORT).show();
-            }
-        }
-        else
-        {
-            Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
-        }
+        // Save the state of toggleLocationService in SharedPreferences
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(PREFS_TOGGLE_LOCATION_SERVICE, toggleLocationService);
+        editor.apply();
     }
 
     @Override

@@ -63,6 +63,10 @@ public class CalibrationActivity extends AppCompatActivity implements SensorEven
 
         Button calibrateButton = findViewById(R.id.calibrateButton);
         calibrateButton.setOnClickListener(view -> startCalibration());
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
     }
 
     private void startCalibration() {
