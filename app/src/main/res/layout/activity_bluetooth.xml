@@ -18,11 +18,21 @@
         android:layout_marginTop="40dp"
         android:textSize="80px"/>
 
+    <Button
+        android:id="@+id/refreshButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:text="Refresh"
+        android:layout_below="@id/title"
+        android:layout_marginTop="20dp"
+        android:onClick="refreshBluetoothDevices" />
+
     <ListView
         android:id="@+id/bluetooth_devices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/title"
+        android:layout_below="@id/refreshButton"
         android:layout_above="@id/bottom_menu"
         android:layout_marginTop="20dp"/>
 

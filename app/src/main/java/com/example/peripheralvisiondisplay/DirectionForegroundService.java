@@ -33,7 +33,10 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.libraries.places.api.model.RectangularBounds;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+
 //todo need to make it so that if the user has walked the wrong way, it can update the directions to accomodate the user.
 //todo: also need to make it so that it tells the user if they are walking the wrong way. i may need to get the previous step information for them to get to the destination of that step before they can continue.
 //todo: check if the user is following the path
@@ -49,6 +52,10 @@ public class DirectionForegroundService extends Service implements SensorEventLi
     private int currentStepIndex = 0;
     private LatLng currentLatLng;
     private LatLng currentStepEndLocation;
+    private LatLng firstLatlng;
+    private Location firstLocation;
+
+
     private String currentStepString;
 
     private LatLng[] latLngArray = new LatLng[2]; //index 0 = previous, index 1 = current location
@@ -80,6 +87,9 @@ public class DirectionForegroundService extends Service implements SensorEventLi
     private float azimuthInDegrees = 0;
 
     private static final float ALPHA = 0.20f; // if ALPHA = 1 OR 0, no filter applies.
+
+    // Create a Queue to store the last 5 location updates
+    private Queue<Location> locationQueue = new LinkedList<>();
 
     @Override
     public void onCreate() {
@@ -199,7 +209,7 @@ public class DirectionForegroundService extends Service implements SensorEventLi
         if (currentLatLng != null && currentStepEndLocation != null) {
             // Calculate the bearing towards the next step
             nextStepBearing = calculateBearing(currentLatLng, currentStepEndLocation);
-            Log.d("TAG", "next step bearing: " + nextStepBearing);
+//            Log.d("TAG", "next step bearing: " + nextStepBearing);
             // ... existing code ...
         } else {
             // Handle the situation when currentLatLng or currentStepEndLocation is null
@@ -216,7 +226,7 @@ public class DirectionForegroundService extends Service implements SensorEventLi
             } else {
                 // Handle the situation when mBluetoothLeService is null
                 // For example, you can log an error message
-                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage turn ");
+//                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage turn ");
             }
         } else {
             if (mBluetoothLeService != null) {
@@ -225,7 +235,7 @@ public class DirectionForegroundService extends Service implements SensorEventLi
             } else {
                 // Handle the situation when mBluetoothLeService is null
                 // For example, you can log an error message
-                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
+//                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
             }
         }
 
@@ -297,6 +307,27 @@ public class DirectionForegroundService extends Service implements SensorEventLi
             currentLatitude = intent.getDoubleExtra("Latitude", 0);
             currentLongitude = intent.getDoubleExtra("Longitude", 0);
 
+            double newLatitude = intent.getDoubleExtra("Latitude", 0);
+            double newLongitude = intent.getDoubleExtra("Longitude", 0);
+            LatLng newLocation = new LatLng(newLatitude, newLongitude);
+
+            // Check if firstLocation is null
+            if (firstLatlng == null) {
+                // This is the user's first location
+                firstLatlng = newLocation;
+            }
+
+            firstLocation = new Location("");
+            firstLocation.setLatitude(firstLatlng.latitude);
+            firstLocation.setLongitude(firstLatlng.longitude);
+
+            Location stependlocation = new Location("");
+            stependlocation.setLatitude(currentStepEndLocation.latitude);
+            stependlocation.setLongitude(currentStepEndLocation.longitude);
+
+            float bearingfromstart = firstLocation.bearingTo(stependlocation);
+            Log.d("calc bearing from start to end", "onReceive: " + bearingfromstart);
+
             // Update the LatLng array
             if (latLngArray[1] != null) {
                 latLngArray[0] = latLngArray[1]; // Move the current LatLng to the previous LatLng
@@ -306,7 +337,93 @@ public class DirectionForegroundService extends Service implements SensorEventLi
             currentLatLng = new LatLng(currentLatitude, currentLongitude);
             Log.i("LOCATIONTAG", "directionforegroundlocationreceiver: " + currentLatitude + " " + currentLongitude);
 
+
+            // Get the new location
+            Location nLocation = new Location("");
+            nLocation.setLatitude(currentLatitude);
+            nLocation.setLongitude(currentLongitude);
+
+
+            locationQueue.add(nLocation);
+
+            if (locationQueue.size() > 5) {
+                locationQueue.poll();
+            }
+
+
+//            // Check if the user has moved a significant distance
+//            float distanceMoved = 0;
+//            if (!locationQueue.isEmpty()) {
+//                Location lastLocation = locationQueue.peek();
+//                distanceMoved = lastLocation.distanceTo(nLocation);
+//            }
+            float movementThreshold = 5; // Set this to a value that makes sense for your application // this was set to 10 before
+            boolean hasMoved = false;
+            Location[] locations = locationQueue.toArray(new Location[0]);
+            for (int i = 0; i < locations.length - 1; i++) {
+                float distance = locations[i].distanceTo(locations[i + 1]);
+                if (distance > movementThreshold) {
+                    hasMoved = true;
+                    break;
+                }
+            }
+
+            if (hasMoved) {
+                // Calculate the average bearing from these locations
+                float totalBearing = 0;
+                for (Location location : locationQueue) {
+                    totalBearing += location.getBearing();
+                }
+                float averageBearing = totalBearing / locationQueue.size();
+
+                // Calculate the bearing from the start location to the end of the step
+                float bearingFromStart = firstLocation.bearingTo(stependlocation);
+
+                // Check if the average bearing is within a range of 60 degrees from the bearing from start
+                if (Math.abs(averageBearing - bearingFromStart) <= 60) {
+                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
+                    Toast.makeText(DirectionForegroundService.this, "Go straight", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage to turn");
+                    Toast.makeText(DirectionForegroundService.this, "Turn", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+
+
+//
+//            if (distanceMoved > movementThreshold) {
+//                // The user has moved a significant distance, add the new location to the queue
+//                locationQueue.add(nLocation);
+//
+//                // If the queue size exceeds 5, remove the oldest location update
+////                if (locationQueue.size() > 5) {
+////                    locationQueue.poll();
+////                }
+//            }
+//
+//            // Calculate the average bearing from these locations
+//            float totalBearing = 0;
+//            for (Location location : locationQueue) {
+//                totalBearing += location.getBearing();
+//            }
+//            float averageBearing = totalBearing / locationQueue.size();
+//
+//            // Calculate the bearing from the start location to the end of the step
+//            float bearingFromStart = firstLocation.bearingTo(stependlocation);
+//
+//            // Check if the average bearing is within a range of 60 degrees from the bearing from start
+//            if (Math.abs(averageBearing - bearingFromStart) <= 60) {
+//                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
+//                Toast.makeText(DirectionForegroundService.this, "Go straight", Toast.LENGTH_SHORT).show();
+//            } else {
+//                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage to turn");
+//                Toast.makeText(DirectionForegroundService.this, "Turn", Toast.LENGTH_SHORT).show();
+//            }
+
+
             if (isStepFulfilled()) {
+                locationQueue.clear();
 
                 // Handle condition when the user has completed their journey and there are no step information left.
                 currentStepString = getNextStep();
@@ -322,62 +439,20 @@ public class DirectionForegroundService extends Service implements SensorEventLi
 
             if (isUserOffPath()) {
 
-                String url = "https://maps.googleapis.com/maps/api/directions/json" +
-                        "?destination=" + MapsActivity.selectedPlace.latitude + "," + MapsActivity.selectedPlace.longitude +
-                        "&mode=walking" +
-                        "&origin=" + currentLatitude + "," + currentLongitude +
-                        "&key=" + apikey;
-
-                Intent newdirectionintent = new Intent("RecalcPath");
-                newdirectionintent.putExtra("url", url);
-                sendBroadcast(newdirectionintent);
+                //TODO: NEED TO ADD THIS BACK AND MAKE IT WORK ASWELL
+//                String url = "https://maps.googleapis.com/maps/api/directions/json" +
+//                        "?destination=" + MapsActivity.selectedPlace.latitude + "," + MapsActivity.selectedPlace.longitude +
+//                        "&mode=walking" +
+//                        "&origin=" + currentLatitude + "," + currentLongitude +
+//                        "&key=" + apikey;
+//
+//                Intent newdirectionintent = new Intent("RecalcPath");
+//                newdirectionintent.putExtra("url", url);
+//                sendBroadcast(newdirectionintent);
 
                 // Execute the AsyncTask to perform the API request
 //                new DirectionsTask(DirectionForegroundService.this).execute(url);
             }
-
-//            // Retrieve the calibrated north setting
-//            SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
-//            float calibratedNorth = sharedPref.getFloat("north", 0);
-////            float azimuthInDegrees = sharedPref.getFloat("azimuthInDegrees", 0);
-//
-//            // Calculate the user's current bearing
-//            float userBearing = (azimuthInDegrees - calibratedNorth + 360) % 360;
-//            float nextStepBearing = 0;
-//            // Check if currentLatLng and currentStepEndLocation are not null
-//            if (currentLatLng != null && currentStepEndLocation != null) {
-//                // Calculate the bearing towards the next step
-//                nextStepBearing = calculateBearing(currentLatLng, currentStepEndLocation);
-//
-//                // ... existing code ...
-//            } else {
-//                // Handle the situation when currentLatLng or currentStepEndLocation is null
-//                // For example, you can log an error message
-//                Log.e("DirectionForegroundService", "currentLatLng or currentStepEndLocation is null");
-//            }
-//
-//            // Check if the user is facing the wrong direction
-//            if (Math.abs(userBearing - nextStepBearing) > BEARING_THRESHOLD) {
-//                if (mBluetoothLeService != null) {
-//                    Log.e("TAG", "turn");
-//                    mBluetoothLeService.sendMessage("TURN");
-//
-//                } else {
-//                    // Handle the situation when mBluetoothLeService is null
-//                    // For example, you can log an error message
-//                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage turn ");
-//                }
-//            } else {
-//                if (mBluetoothLeService != null) {
-//                    Log.e("TAG", "str");
-//                    mBluetoothLeService.sendMessage("STR");
-//                } else {
-//                    // Handle the situation when mBluetoothLeService is null
-//                    // For example, you can log an error message
-//                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
-//                }
-//            }
-
         }
     };
 

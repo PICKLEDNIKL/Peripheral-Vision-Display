@@ -19,6 +19,7 @@ import android.os.IBinder;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -38,6 +39,8 @@ public class BluetoothActivity extends Activity {
     private Set<BluetoothDevice> mPairedDevices;
     private BluetoothSocket mSocket;
     private Set<BluetoothDevice> mDeviceSet = new HashSet<>();
+
+    Button refreshButton;
     private Handler handler = new Handler();
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // Standard SerialPortService ID
 
@@ -104,6 +107,9 @@ public class BluetoothActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth);
+
+        refreshButton = findViewById(R.id.refreshButton);
+        refreshButton.setOnClickListener(view -> refreshBluetoothDevices(view));
 
         ListView listView = findViewById(R.id.bluetooth_devices);
 
@@ -212,6 +218,25 @@ public class BluetoothActivity extends Activity {
             mBluetoothAdapter.cancelDiscovery();
         }
         mBluetoothAdapter.startDiscovery();
+    }
+
+    public void refreshBluetoothDevices(View view) {
+        // Cancel the current discovery process if it's running
+        if (mBluetoothAdapter.isDiscovering()) {
+            mBluetoothAdapter.cancelDiscovery();
+        }
+
+        // Clear the list of Bluetooth devices
+        mDeviceSet.clear();
+        mArrayAdapter.clear();
+
+        // Start a new discovery process after a small delay
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mBluetoothAdapter.startDiscovery();
+            }
+        }, 500); // delay for half a second to allow the previous discovery process to cancel
     }
 
     @Override
