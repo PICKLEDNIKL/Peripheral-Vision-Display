@@ -198,8 +198,8 @@ public class HomeActivity extends AppCompatActivity {
                         break;
                     case BluetoothAdapter.STATE_ON:
 //                        Toast.makeText(context, "Bluetooth turned on", Toast.LENGTH_SHORT).show();
-                        BluetoothScanner bluetoothScanner = new BluetoothScanner(bluetoothAdapter);
-                        bluetoothScanner.scanLeDevice();
+//                        BluetoothScanner bluetoothScanner = new BluetoothScanner(bluetoothAdapter);
+//                        bluetoothScanner.scanLeDevice();
                         break;
                 }
             }
