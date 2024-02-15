@@ -36,23 +36,23 @@ public class NotificationListener extends NotificationListenerService {
         // Convert the selected importance level to an integer
         int selectedImportance;
         switch (selectedImportanceLevel) {
-            case "High":
+            case "Urgent":
                 selectedImportance = NotificationManager.IMPORTANCE_HIGH;
                 break;
-            case "Default":
+            case "High":
                 selectedImportance = NotificationManager.IMPORTANCE_DEFAULT;
                 break;
-            case "Low":
+            case "Medium":
                 selectedImportance = NotificationManager.IMPORTANCE_LOW;
                 break;
-            case "Min":
+            case "Low":
                 selectedImportance = NotificationManager.IMPORTANCE_MIN;
                 break;
             case "None":
                 selectedImportance = NotificationManager.IMPORTANCE_NONE;
                 break;
             default:
-                selectedImportance = NotificationManager.IMPORTANCE_UNSPECIFIED;
+                selectedImportance = NotificationManager.IMPORTANCE_LOW;
                 break;
         }
 

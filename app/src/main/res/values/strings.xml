@@ -5,12 +5,11 @@
 
 <!--    TODO: CHANGE STRINGS TO CORRECT USER VISIBLE VALUES : also make it so that the default is IMPORTANCE_DEFAULT or LOW.-->
     <string-array name="importance_levels">
+        <item>Urgent</item>
         <item>High</item>
-        <item>Default</item>
+        <item>Medium</item>
         <item>Low</item>
-        <item>Min</item>
         <item>None</item>
-        <item>Unspecified</item>
     </string-array>
 
 </resources>

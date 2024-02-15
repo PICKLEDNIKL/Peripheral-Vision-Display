@@ -37,7 +37,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         // Get the saved importance level from shared preferences
         SharedPreferences sharedPref = getSharedPreferences("NotificationPreferences", MODE_PRIVATE);
-        String savedImportanceLevel = sharedPref.getString("selectedImportanceLevel", "High");
+        String savedImportanceLevel = sharedPref.getString("selectedImportanceLevel", "Medium");
 
         Spinner spinner = findViewById(R.id.spinnerImportanceLevel);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
