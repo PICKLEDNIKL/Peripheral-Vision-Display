@@ -64,6 +64,13 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".HomeActivity"
             android:exported="true"
             android:screenOrientation="portrait"

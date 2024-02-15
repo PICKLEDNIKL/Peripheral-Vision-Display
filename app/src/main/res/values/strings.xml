@@ -2,4 +2,15 @@
     <string name="app_name">Peripheral Vision Display</string>
     <string name="title_activity_maps">MapsActivity</string>
     <string name="API_KEY">BuildConfig.API_KEY</string>
+
+<!--    TODO: CHANGE STRINGS TO CORRECT USER VISIBLE VALUES : also make it so that the default is IMPORTANCE_DEFAULT or LOW.-->
+    <string-array name="importance_levels">
+        <item>High</item>
+        <item>Default</item>
+        <item>Low</item>
+        <item>Min</item>
+        <item>None</item>
+        <item>Unspecified</item>
+    </string-array>
+
 </resources>

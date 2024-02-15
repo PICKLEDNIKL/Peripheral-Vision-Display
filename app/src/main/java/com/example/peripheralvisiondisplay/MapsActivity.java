@@ -55,6 +55,7 @@ import com.google.android.libraries.places.widget.listener.PlaceSelectionListene
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.Arrays;
+import java.util.Map;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener {
@@ -148,6 +149,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return true;
             } else if (itemId == R.id.bluetooth) {
                 intent = new Intent(MapsActivity.this, BluetoothActivity.class);
+                startActivity(intent);
+                return true;
+            } else if (itemId == R.id.settings) {
+                intent = new Intent(MapsActivity.this, SettingsActivity.class);
                 startActivity(intent);
                 return true;
             }

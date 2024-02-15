@@ -147,6 +147,10 @@ public class BluetoothActivity extends Activity {
                 startActivity(intent);
 
                 return true;
+            } else if (itemId == R.id.settings) {
+                intent = new Intent(BluetoothActivity.this, SettingsActivity.class);
+                startActivity(intent);
+                return true;
             }
             return false;
         });

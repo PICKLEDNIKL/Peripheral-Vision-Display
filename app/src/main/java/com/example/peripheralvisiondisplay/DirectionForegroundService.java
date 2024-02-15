@@ -542,7 +542,7 @@ public class DirectionForegroundService extends Service implements SensorEventLi
 
             // Check if the user's distance is significantly greater than the expected distance
             if (currentDistance > expectedDistance * 1.1) { // 10% tolerance
-                Toast.makeText(this, "user distance > expected distance", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this, "user distance > expected distance", Toast.LENGTH_SHORT).show();
                 Log.d("directionforegroundservice", "isUserOffPath: true 10%");
                 return true; // The user is off the path
             }
@@ -551,7 +551,7 @@ public class DirectionForegroundService extends Service implements SensorEventLi
             if (latLngArray[0] != null) {
                 double previousDistance = calculateDistance(latLngArray[0], currentStepEndLocation);
                 if (currentDistance >= previousDistance * 1.05) {
-                    Toast.makeText(this, "user is moving off path", Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(this, "user is moving off path", Toast.LENGTH_SHORT).show();
                     Log.d("directionforegroundservice", "isUserOffPath: true 1.05%");
                     return true; // The user is not moving towards the end of the step
                 }

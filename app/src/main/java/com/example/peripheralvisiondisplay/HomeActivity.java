@@ -98,6 +98,10 @@ public class HomeActivity extends AppCompatActivity {
                 intent = new Intent(HomeActivity.this, BluetoothActivity.class);
                 startActivity(intent);
                 return true;
+            } else if (itemId == R.id.settings) {
+                intent = new Intent(HomeActivity.this, SettingsActivity.class);
+                startActivity(intent);
+                return true;
             }
             return false;
         });
