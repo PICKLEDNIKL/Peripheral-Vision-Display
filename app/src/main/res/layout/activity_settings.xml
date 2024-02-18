@@ -3,59 +3,235 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/white">
+    android:layout_height="match_parent">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/bottom_menu"
+        android:fillViewport="true">
 
-    <TextView
-        android:id="@+id/title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Settings"
-        android:layout_centerHorizontal="true"
-        android:layout_gravity="center"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-        android:layout_marginTop="40dp"
-        android:textSize="80px"/>
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white">
 
-    <TextView
-        android:id="@+id/notificationheader"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Notification Settings"
-        android:layout_centerHorizontal="true"
-        android:layout_gravity="center"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-        android:layout_marginTop="20dp"
-        android:layout_below="@+id/title"
-        android:textSize="17sp"/>
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Settings"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="40dp"
+                android:textSize="80px"/>
 
-    <TextView
-        android:id="@+id/notificationtext"
+            <TextView
+                android:id="@+id/notificationheader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Notification Settings"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="20dp"
+                android:layout_below="@+id/title"
+                android:textSize="17sp"/>
+
+            <TextView
+                android:id="@+id/notificationtext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Notification Importance Level (Notification service will work for any notifications above and equal to the threshold chosen):"
+                android:layout_marginLeft="20dp"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textColor="@color/black"
+                android:layout_marginTop="20dp"
+                android:layout_below="@+id/notificationheader"
+                android:textSize="15sp"/>
+
+            <Spinner
+                android:id="@+id/spinnerImportanceLevel"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginLeft="20dp"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textSize="20sp"
+                android:layout_below="@id/notificationtext"
+                android:layout_marginTop="20dp"/>
+
+            <TextView
+                android:id="@+id/glassesheader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Glasses Settings"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="20dp"
+                android:layout_below="@+id/spinnerImportanceLevel"
+                android:textSize="17sp"/>
+
+            <Switch
+                android:id="@+id/switch_led_movement"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginLeft="10dp"
+                android:text="LED Movement"
+                android:layout_below="@+id/glassesheader"
+                android:layout_marginTop="20dp"/>
+
+    <!--        Buttons used to change the colour settings for the glasses.-->
+    <!--        TODO: need to make it so that the colour of the button changes based on the colour picked and i need a reset button to reset to defaults.-->
+            <Button
+                android:id="@+id/notifbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:text="''Notification'' Colour"
+                android:layout_below="@+id/switch_led_movement"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="20dp"/>
+            <View
+                android:id="@+id/notifcolour"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/switch_led_movement"
+                android:layout_toRightOf="@+id/notifbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="20dp" />
+
+            <Button
+                android:id="@+id/leftbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="''Turn Left'' Colour"
+                android:layout_below="@+id/notifbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="20dp"/>
+            <View
+                android:id="@+id/leftcolour"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/notifbutton"
+                android:layout_toRightOf="@+id/leftbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="20dp" />
+
+            <Button
+                android:id="@+id/rightbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="''Turn Right'' Colour"
+                android:layout_below="@+id/leftbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="20dp"/>
+            <View
+                android:id="@+id/rightcolour"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/leftbutton"
+                android:layout_toRightOf="@+id/rightbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="20dp" />
+
+            <Button
+                android:id="@+id/straightbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="''Go Sraight'' Colour"
+                android:layout_below="@+id/rightbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="20dp"/>
+            <View
+                android:id="@+id/straightcolour"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/rightbutton"
+                android:layout_toRightOf="@+id/straightbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="20dp" />
+
+            <Button
+                android:id="@+id/turnbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="''Wrong Way'' Colour"
+                android:layout_below="@+id/straightbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginBottom="70dp"
+                android:layout_marginTop="20dp"/>
+            <View
+                android:id="@+id/turncolour"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/straightbutton"
+                android:layout_toRightOf="@+id/turnbutton"
+                android:layout_marginLeft="10dp"
+                android:layout_marginBottom="70dp"
+                android:layout_marginTop="20dp" />
+
+
+
+<!--            <Button-->
+<!--                android:id="@+id/saveChangesButton"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Save Changes"-->
+<!--                android:layout_below="@id/turnbutton"-->
+<!--                android:layout_centerHorizontal="true"-->
+<!--                android:layout_marginTop="30dp"-->
+<!--                android:layout_marginBottom="20dp"/>-->
+
+<!--            <Button-->
+<!--                android:id="@+id/resetButton"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Reset"-->
+<!--                android:layout_below="@id/saveChangesButton"-->
+<!--                android:layout_centerHorizontal="true"-->
+<!--                android:layout_marginTop="30dp"-->
+<!--                android:layout_marginBottom="20dp"/>-->
+        </RelativeLayout>
+    </ScrollView>
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Notification Importance Level (Notification service will work for any notifications above and equal to the threshold chosen):"
-        android:layout_marginLeft="20dp"
-        android:layout_centerHorizontal="true"
-        android:layout_gravity="center"
-        android:textColor="@color/black"
-        android:layout_marginTop="20dp"
-        android:layout_below="@+id/notificationheader"
-        android:textSize="15sp"/>
+        android:orientation="horizontal"
+        android:layout_above="@id/bottom_menu"
+        android:background="@drawable/button_background">
 
+        <Button
+            android:id="@+id/saveChangesButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Save Changes"
+            android:layout_above="@id/bottom_menu"
+            android:layout_toLeftOf="@+id/resetButton"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="10dp"/>
 
-    <Spinner
-        android:id="@+id/spinnerImportanceLevel"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginLeft="20dp"
-        android:layout_centerHorizontal="true"
-        android:layout_gravity="center"
-        android:textSize="20sp"
-        android:layout_below="@id/notificationtext"
-        android:layout_marginTop="20dp"/>
-
+        <Button
+            android:id="@+id/resetButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Reset"
+            android:layout_above="@id/bottom_menu"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="10dp"/>
+    </LinearLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_menu"
@@ -71,15 +247,5 @@
         app:itemIconTint="@color/black"
         app:menu="@menu/bottom_menu"
         app:labelVisibilityMode="labeled" />
-
-    <Button
-        android:id="@+id/saveChangesButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Save Changes"
-        android:layout_below="@id/spinnerImportanceLevel"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"/>
-
 
 </RelativeLayout>

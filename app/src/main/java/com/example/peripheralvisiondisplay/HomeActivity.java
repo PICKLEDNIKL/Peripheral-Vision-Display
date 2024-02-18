@@ -1,5 +1,7 @@
 package com.example.peripheralvisiondisplay;
 
+import static com.example.peripheralvisiondisplay.BluetoothActivity.REQUEST_CODE;
+
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
@@ -16,9 +18,11 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.util.Log;
@@ -65,12 +69,26 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        SharedPreferences sharedPref = getSharedPreferences("LedPreferences", Context.MODE_PRIVATE);
+        boolean isFirstLaunch = sharedPref.getBoolean("isFirstLaunch", true);
+        if (isFirstLaunch) {
+            new Handler().postDelayed(() -> {
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putBoolean("isFirstLaunch", false);
+                editor.putInt("notifColor", Color.YELLOW);
+                editor.putInt("leftColor", Color.BLUE);
+                editor.putInt("rightColor", Color.BLUE);
+                editor.putInt("straightColor", Color.GREEN);
+                editor.putInt("turnColor", Color.RED);
+                editor.apply();
+            }, 5000); // Delay of 5 seconds
+        }
+
         notificationServiceButton = findViewById(R.id.notificationServiceButton);
         notificationServiceButton.setOnClickListener(view -> toggleNotificationService());
 
         locationServiceButton = findViewById(R.id.locationServiceButton);
         locationServiceButton.setOnClickListener(view -> toggleLocationService());
-
 
         bottomNavigationView = findViewById(R.id.bottom_menu);
         bottomNavigationView.setOnItemSelectedListener(item -> {
@@ -131,6 +149,26 @@ public class HomeActivity extends AppCompatActivity {
         registerReceiver(bluetoothStateReceiver, filter);
 
 
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+
+        if (!isServiceRunning(BluetoothLeService.class)) {
+            Intent serviceIntent = new Intent(this, BluetoothLeService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+                Log.d("homeactivity", "onCreate: startforegroundservice for ble");
+            } else {
+                startService(serviceIntent);
+            }
+        }
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_CODE);
+        }
+
+
 //        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 //            startForegroundService(gattServiceIntent);
@@ -157,19 +195,6 @@ public class HomeActivity extends AppCompatActivity {
 //            editor.putBoolean(PREFS_ONCREATE_EXECUTED, true);
 //            editor.apply();
 //        }
-
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().hide();
-        }
-
-        if (!isServiceRunning(BluetoothLeService.class)) {
-            Intent serviceIntent = new Intent(this, BluetoothLeService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent);
-            } else {
-                startService(serviceIntent);
-            }
-        }
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {

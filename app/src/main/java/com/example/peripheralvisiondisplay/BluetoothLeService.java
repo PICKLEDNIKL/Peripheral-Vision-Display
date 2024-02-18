@@ -17,6 +17,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
@@ -34,6 +35,7 @@ public class BluetoothLeService extends Service {
     //todo: blacklist applications so that the notificaitons dont show from that app. maybe check if the notification is being updated. check waht would be a good cutoff for notification from the same app.
     //todo: stop notificaitons from apps / squash notificaitons from apps.
     private final static String TAG = BluetoothLeService.class.getSimpleName();
+    private static final int STATE_CONNECTING = 1;
 
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
@@ -136,15 +138,28 @@ public class BluetoothLeService extends Service {
         }
     }
 
+    public void sendSettingPref(SharedPreferences ledsharedPref) {
+        int notifColor = ledsharedPref.getInt("notifColor", 0);
+        int leftColor = ledsharedPref.getInt("leftColor", 0);
+        int rightColor = ledsharedPref.getInt("rightColor", 0);
+        int straightColor = ledsharedPref.getInt("straightColor", 0);
+        int turnColor = ledsharedPref.getInt("turnColor", 0);
+        boolean ledMovement = ledsharedPref.getBoolean("led_movement", false);
+
+        sendMessage(notifColor + "," + leftColor + "," + rightColor + "," + straightColor + "," + turnColor + "," + ledMovement);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
 //        createNotificationChannel();
+        initialize();
 
         // Register the receiver
         IntentFilter filter = new IntentFilter();
         filter.addAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
         registerReceiver(notificationReceiver, filter);
+        Log.d(TAG, "onCreate: ble might work");
     }
 
     @Override
@@ -159,6 +174,7 @@ public class BluetoothLeService extends Service {
                 .build();
         // Make this service a foreground service
         startForeground(notificationID, notification);
+        Log.d(TAG, "onCreate: startforegroundservice for ble");
         return START_NOT_STICKY;
     }
 
@@ -250,7 +266,8 @@ public class BluetoothLeService extends Service {
             }
         }
 
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+//        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        bluetoothAdapter = bluetoothManager.getAdapter();
         if (bluetoothAdapter == null) {
             Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
             return false;
@@ -259,8 +276,12 @@ public class BluetoothLeService extends Service {
     }
 
     public boolean connect(final String address) {
-        if (bluetoothAdapter == null || address == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
+        if (bluetoothAdapter == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return false;
+        }
+        if (address == null) {
+            Log.w(TAG, "unspecified address.");
             return false;
         }
 
@@ -276,15 +297,29 @@ public class BluetoothLeService extends Service {
             }
         }
 
-        try {
-            final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
-            // connect to the GATT server on the device
-            bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
-            return true;
-        } catch (IllegalArgumentException exception) {
-            Log.w(TAG, "Device not found with provided address.  Unable to connect.");
+//        try {
+//            final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+//            // connect to the GATT server on the device
+//            bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
+//            return true;
+//        } catch (IllegalArgumentException exception) {
+//            Log.w(TAG, "Device not found with provided address.  Unable to connect.");
+//            return false;
+
+
+        final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+        if (device == null) {
+            Log.w(TAG, "Device not found. Unable to connect.");
             return false;
         }
+
+        // We want to directly connect to the device, so we are setting the autoConnect
+        // parameter to false.
+        bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
+        Log.d(TAG, "Trying to create a new connection.");
+        bluetoothDeviceAddress = address;
+        connectionState = STATE_CONNECTING;
+        return true;
     }
 
     public void disconnect() {
@@ -358,6 +393,13 @@ public class BluetoothLeService extends Service {
             Log.w(TAG, "Failed to write characteristic");
         }
         Log.d(TAG, "sendMessage: sent message");
+    }
+
+    public BluetoothDevice getConnectedDevice() {
+        if (bluetoothGatt != null) {
+            return bluetoothGatt.getDevice();
+        }
+        return null;
     }
 
 

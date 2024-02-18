@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class BluetoothActivity extends Activity {
-    private static final int REQUEST_CODE = 1;
+    static final int REQUEST_CODE = 1;
     private BluetoothAdapter mBluetoothAdapter;
     private ArrayAdapter<String> mArrayAdapter;
     private Set<BluetoothDevice> mPairedDevices;
@@ -52,6 +52,8 @@ public class BluetoothActivity extends Activity {
     private static final String PREFS_NAME = "HomeActivityPrefs";
     private static final String PREFS_TOGGLE_LOCATION_SERVICE = "toggleLocationService";
 
+    private TextView connectedDeviceTextView;
+    private Button disconnectButton;
 
     // Code to manage Service lifecycle.
     private final ServiceConnection serviceConnection = new ServiceConnection() {
@@ -61,6 +63,16 @@ public class BluetoothActivity extends Activity {
             BluetoothLeService.LocalBinder binder = (BluetoothLeService.LocalBinder) service;
             bluetoothLeService = binder.getService();
             bound = true;
+
+            // If a device is connected, update the TextView
+            if (bound) {
+                BluetoothDevice device = bluetoothLeService.getConnectedDevice();
+                if (device != null) {
+                    connectedDeviceTextView.setText("Connected Device: " + device.getName() + "\n" + device.getAddress());
+                } else {
+                    connectedDeviceTextView.setText("No device connected");
+                }
+            }
         }
 
         @Override
@@ -109,12 +121,31 @@ public class BluetoothActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth);
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_CODE);
+//        }
+        // Check if the permission is granted
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            // Permission is granted, start BluetoothActivity
+            Intent intent = new Intent(this, BluetoothActivity.class);
+            startActivity(intent);
+        } else {
+            // Permission is not granted, request the permission
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_CODE);
         }
 
         refreshButton = findViewById(R.id.refreshButton);
         refreshButton.setOnClickListener(view -> refreshBluetoothDevices(view));
+
+        connectedDeviceTextView = findViewById(R.id.connected_device);
+
+        disconnectButton = findViewById(R.id.disconnect_button);
+        disconnectButton.setOnClickListener(view -> {
+            if (bound) {
+                bluetoothLeService.disconnect();
+                connectedDeviceTextView.setText("No device connected");
+            }
+        });
 
         ListView listView = findViewById(R.id.bluetooth_devices);
 
@@ -224,15 +255,17 @@ public class BluetoothActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted
-            } else {
-                // Permission denied. Disable the functionality that depends on this permission.
-                Toast.makeText(this, "Permission denied to connect to Bluetooth devices", Toast.LENGTH_SHORT).show();
-            }
+    if (requestCode == REQUEST_CODE) {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // Permission granted, start BluetoothActivity
+            Intent intent = new Intent(this, BluetoothActivity.class);
+            startActivity(intent);
+        } else {
+            // Permission denied. Disable the functionality that depends on this permission.
+            Toast.makeText(this, "Permission denied to connect to Bluetooth devices", Toast.LENGTH_SHORT).show();
         }
     }
+}
 
     private void startDiscovery() {
         if (mBluetoothAdapter.isDiscovering()) {
