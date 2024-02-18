@@ -18,15 +18,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 
@@ -112,13 +115,7 @@ public class BluetoothLeService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             if ("com.example.peripheralvisiondisplay.NEW_NOTIFICATION".equals(intent.getAction())) {
-                Log.d(TAG, "check if duped notifications");
-                String notificationText = intent.getStringExtra("notificationText");
-//                notificationcount++;
-//                if (notificationcount == 3)
-//                    notificationcount = 1;
-                //todo:
-//                sendMessage("NOTIF" + notificationcount);
+//                Log.d(TAG, "check if duped notifications");
                 sendMessage("NOTIF");
             }
         }
@@ -139,6 +136,9 @@ public class BluetoothLeService extends Service {
     }
 
     public void sendSettingPref(SharedPreferences ledsharedPref) {
+
+//        ledsharedPref = getSharedPreferences("LedPreferences", Context.MODE_PRIVATE);
+
         int notifColor = ledsharedPref.getInt("notifColor", 0);
         int leftColor = ledsharedPref.getInt("leftColor", 0);
         int rightColor = ledsharedPref.getInt("rightColor", 0);
@@ -146,7 +146,76 @@ public class BluetoothLeService extends Service {
         int turnColor = ledsharedPref.getInt("turnColor", 0);
         boolean ledMovement = ledsharedPref.getBoolean("led_movement", false);
 
-        sendMessage(notifColor + "," + leftColor + "," + rightColor + "," + straightColor + "," + turnColor + "," + ledMovement);
+        // Convert the settings to byte arrays
+        byte[] notifColorBytes = settingConverter("NOTIF", notifColor);
+        byte[] leftColorBytes = settingConverter("LEFT", leftColor);
+        byte[] rightColorBytes = settingConverter("RIGHT", rightColor);
+        byte[] straightColorBytes = settingConverter("STR", straightColor);
+        byte[] turnColorBytes = settingConverter("TURN", turnColor);
+        byte[] ledMovementBytes = settingConverter("LED", ledMovement ? 1 : 0);
+
+        // Concatenate the byte arrays into a single byte array
+//        byte[] byteArray = new byte[12];
+//        System.arraycopy(notifColorBytes, 0, byteArray, 0, 2);
+//        System.arraycopy(leftColorBytes, 0, byteArray, 2, 2);
+//        System.arraycopy(rightColorBytes, 0, byteArray, 4, 2);
+//        System.arraycopy(straightColorBytes, 0, byteArray, 6, 2);
+//        System.arraycopy(turnColorBytes, 0, byteArray, 8, 2);
+//        System.arraycopy(ledMovementBytes, 0, byteArray, 10, 2);
+
+
+        ByteBuffer byteBuffer = ByteBuffer.allocate(12);
+        byteBuffer.put(notifColorBytes);
+        byteBuffer.put(leftColorBytes);
+        byteBuffer.put(rightColorBytes);
+        byteBuffer.put(straightColorBytes);
+        byteBuffer.put(turnColorBytes);
+        byteBuffer.put(ledMovementBytes);
+        byte[] byteArray = byteBuffer.array();
+
+        String message = Base64.encodeToString(byteArray, Base64.DEFAULT);
+
+//        Log.d(TAG, "sendSettingPref: " + notifColor + "," + leftColor + "," + rightColor + "," + straightColor + "," + turnColor + "," + ledMovement);
+
+        sendMessage(message);
+    }
+
+    private byte[] settingConverter(String setting, int color) {
+        byte[] settingBytes = new byte[2];
+
+        // Convert the setting type to a byte
+        if (setting.equals("NOTIF")) {
+            settingBytes[0] = (byte) 1;
+        } else if (setting.equals("LEFT")) {
+            settingBytes[0] = (byte) 2;
+        } else if (setting.equals("RIGHT")) {
+            settingBytes[0] = (byte) 3;
+        } else if (setting.equals("STR")) {
+            settingBytes[0] = (byte) 4;
+        } else if (setting.equals("TURN")) {
+            settingBytes[0] = (byte) 5;
+        } else {
+            settingBytes[0] = (byte) 0;
+        }
+
+        // Convert the color to a byte
+        if (color == Color.RED) {
+            settingBytes[1] = (byte) 1;
+        } else if (color == Color.parseColor("#800080")) { // Purple
+            settingBytes[1] = (byte) 2;
+        } else if (color == Color.BLUE) {
+            settingBytes[1] = (byte) 3;
+        } else if (color == Color.GREEN) {
+            settingBytes[1] = (byte) 4;
+        } else if (color == Color.YELLOW) {
+            settingBytes[1] = (byte) 5;
+        } else if (color == Color.parseColor("#FFA500")) { // Orange
+            settingBytes[1] = (byte) 6;
+        } else {
+            settingBytes[1] = (byte) 0;
+        }
+
+        return settingBytes;
     }
 
     @Override
@@ -154,6 +223,8 @@ public class BluetoothLeService extends Service {
         super.onCreate();
 //        createNotificationChannel();
         initialize();
+
+        //TODO = NEED TO MAKE IT SO THAT THE SETTINGS GET SENT RIGHT AWAY TO THE DEVICE, probably better to do it when the device is conncted to.
 
         // Register the receiver
         IntentFilter filter = new IntentFilter();
@@ -275,37 +346,59 @@ public class BluetoothLeService extends Service {
         return true;
     }
 
-    public boolean connect(final String address) {
-        if (bluetoothAdapter == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized");
-            return false;
-        }
-        if (address == null) {
-            Log.w(TAG, "unspecified address.");
-            return false;
-        }
-
-        // previously connected device.  Try to reconnect.
-        if (bluetoothDeviceAddress != null && address.equals(bluetoothDeviceAddress)
-                && bluetoothGatt != null) {
-            Log.d(TAG, "Trying to use an existing bluetoothGatt for connection.");
-            if (bluetoothGatt.connect()) {
-                connectionState = STATE_CONNECTED;
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-//        try {
-//            final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
-//            // connect to the GATT server on the device
-//            bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
-//            return true;
-//        } catch (IllegalArgumentException exception) {
-//            Log.w(TAG, "Device not found with provided address.  Unable to connect.");
+//    public boolean connect(final String address) {
+//        if (bluetoothAdapter == null) {
+//            Log.w(TAG, "BluetoothAdapter not initialized");
 //            return false;
+//        }
+//        if (address == null) {
+//            Log.w(TAG, "unspecified address.");
+//            return false;
+//        }
+//
+//        // previously connected device.  Try to reconnect.
+//        if (bluetoothDeviceAddress != null && address.equals(bluetoothDeviceAddress)
+//                && bluetoothGatt != null) {
+//            Log.d(TAG, "Trying to use an existing bluetoothGatt for connection.");
+//            if (bluetoothGatt.connect()) {
+//                connectionState = STATE_CONNECTED;
+//                return true;
+//            } else {
+//                return false;
+//            }
+//        }
+//
+////        try {
+////            final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+////            // connect to the GATT server on the device
+////            bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
+////            return true;
+////        } catch (IllegalArgumentException exception) {
+////            Log.w(TAG, "Device not found with provided address.  Unable to connect.");
+////            return false;
+//
+//
+//        final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+//        if (device == null) {
+//            Log.w(TAG, "Device not found. Unable to connect.");
+//            return false;
+//        }
+//
+//        // We want to directly connect to the device, so we are setting the autoConnect
+//        // parameter to false.
+//        bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
+//        Log.d(TAG, "Trying to create a new connection.");
+//        bluetoothDeviceAddress = address;
+//        connectionState = STATE_CONNECTING;
+//        return true;
+//    }
 
+
+    public boolean connect(final String address) {
+        if (bluetoothAdapter == null || address == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
+            return false;
+        }
 
         final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
         if (device == null) {

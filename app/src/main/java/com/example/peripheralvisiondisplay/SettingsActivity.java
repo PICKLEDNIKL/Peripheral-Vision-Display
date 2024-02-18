@@ -1,12 +1,15 @@
 package com.example.peripheralvisiondisplay;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -60,6 +63,9 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
+
+        Intent bleintent = new Intent(this, BluetoothLeService.class);
+        bindService(bleintent, serviceConnection, BIND_AUTO_CREATE);
 
         // Get the shared preferences
         ledsharedPref = getSharedPreferences("LedPreferences", Context.MODE_PRIVATE);
@@ -152,10 +158,8 @@ public class SettingsActivity extends AppCompatActivity {
                 editor.putBoolean("led_movement", switchLedMovement.isChecked());
                 editor.apply();
 
-
                 // Send the preferences to the Bluetooth device
-//                bluetoothLeService.sendSettingPref(ledsharedPref);
-
+                bluetoothLeService.sendSettingPref(ledsharedPref);
 
                 Toast.makeText(SettingsActivity.this, "Changes saved", Toast.LENGTH_SHORT).show();
             }
@@ -195,11 +199,8 @@ public class SettingsActivity extends AppCompatActivity {
                 editor.putString("selectedImportanceLevel", defaultImportanceLevel);
                 editor.apply();
 
-                //TODO: MAKE SURE THAT THE PREF IS SENT TO THE DEVICE
-
                 // Send the preferences to the Bluetooth device
-//                bluetoothLeService.sendSettingPref(ledsharedPref);
-
+                bluetoothLeService.sendSettingPref(ledsharedPref);
 
                 Toast.makeText(SettingsActivity.this, "Settings reset and saved", Toast.LENGTH_SHORT).show();
             }
@@ -241,8 +242,24 @@ public class SettingsActivity extends AppCompatActivity {
             return false;
         });
 
-
     }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            BluetoothLeService.LocalBinder binder = (BluetoothLeService.LocalBinder) service;
+            bluetoothLeService = binder.getService();
+
+            // Send the preferences to the Bluetooth device
+            SharedPreferences ledsharedPref = getSharedPreferences("LedPreferences", Context.MODE_PRIVATE);
+            bluetoothLeService.sendSettingPref(ledsharedPref);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            bluetoothLeService = null;
+        }
+    };
 
     //TODO: MAKE SURE THAT WHEN THE SAVE BUTTON IS PRESSED, IT ALSO SAVES THIS AND IT ALSO SENDS THIS TO THE MICROCONTROLLER WHEN I FIRST CONNECT TO IT. THIS NEEDS TO ALSO INCLUDE MOVEMENT OF LEDS
     private void setupColorButton(Button button, View view, String prefKey) {
@@ -309,47 +326,12 @@ public class SettingsActivity extends AppCompatActivity {
         builder.show();
     }
 
-//    private void setupColorButton(Button button, String prefKey) {
-//        button.setOnClickListener(v -> {
-//            // Create a new dialog
-//            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-//            builder.setTitle("Choose a color");
-//
-//            // Add buttons for each color
-//            String[] colors = {"Red", "Purple", "Blue", "Green", "Yellow", "Orange"};
-//            builder.setItems(colors, (dialog, which) -> {
-//                int selectedColor;
-//                switch (which) {
-//                    case 0:
-//                        selectedColor = Color.RED;
-//                        break;
-//                    case 1:
-//                        selectedColor = Color.parseColor("#800080"); // Purple
-//                        break;
-//                    case 2:
-//                        selectedColor = Color.BLUE;
-//                        break;
-//                    case 3:
-//                        selectedColor = Color.GREEN;
-//                        break;
-//                    case 4:
-//                        selectedColor = Color.YELLOW;
-//                        break;
-//                    case 5:
-//                        selectedColor = Color.parseColor("#FFA500"); // Orange
-//                        break;
-//                    default:
-//                        selectedColor = Color.YELLOW;
-//                }
-//
-//                // Save the selected color in shared preferences
-//                SharedPreferences.Editor editor = ledsharedPref.edit();
-//                editor.putInt(prefKey, selectedColor);
-//                editor.apply();
-//            });
-//
-//            // Show the dialog
-//            builder.show();
-//        });
-//    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        // ...
+
+        unbindService(serviceConnection);
+    }
 }
