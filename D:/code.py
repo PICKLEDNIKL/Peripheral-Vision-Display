@@ -71,7 +71,7 @@ def apply_settings(decoded_bytes):
         color = colors_map.get(decoded_bytes[i + 1], "UNKNOWN")
 
         # Apply the setting
-        print(f"Applying setting {setting} with color {color}")
+        # print(f"Applying setting {setting} with color {color}")
 
         # Here, you can call the appropriate method to apply the setting
         # For example:
@@ -125,33 +125,35 @@ while True:
                 message = data.decode("utf-8")
                 print("message received")
                 print(message)
+
                 # NOTIF
-                if message.startswith('LEFT'):
-                    # for count in range(0, 2):
-                    # light up all of left ring
-                    # for i in range(0, 24):
-                    left_ring[0] = notifcolor
-                    left_ring[6] = notifcolor
-                    left_ring[12] = notifcolor
-                    left_ring[18] = notifcolor
+                if message.startswith('NOTIF'):
+                    if motionboolean:
+                        for i in range(0, 19, 6):
+                            left_ring[i] = notifcolor
+                            right_ring[i] = notifcolor
+                            glasses.show() 
+                            time.sleep(0.1)
+                        for i in range(0, 19, 6):
+                            left_ring[i] = 0
+                            right_ring[i] = 0
+                            glasses.show() 
+                            time.sleep(0.1)
 
-                    # light up all of right ring
-                    # for i in range(0, 24):
-                    right_ring[0] = notifcolor
-                    right_ring[6] = notifcolor
-                    right_ring[12] = notifcolor
-                    right_ring[18] = notifcolor
-                    glasses.show()
-                    time.sleep(0.5) # How long the light stays on
+                    elif not motionboolean:
+                        for i in range(0, 19, 6):
+                            left_ring[i] = notifcolor
+                            right_ring[i] = notifcolor
+                        glasses.show() 
+                        time.sleep(0.5)
+                        for i in range(0, 19, 6):
+                            left_ring[i] = 0
+                            right_ring[i] = 0
+                        glasses.show() 
+                        time.sleep(0.5)
 
-                    # reset leds
-                    for i in range(0, 24):
-                        left_ring[i] = 0
-                        right_ring[i] = 0
-                    glasses.show()
-                    time.sleep(0.25)
                 # LEFT
-                elif message.startswith('NOTIF'):
+                elif message.startswith('LEFT'):
                     for count in range(0, 2):
                         # light up the left side of the left ring
                         if motionboolean:
@@ -160,22 +162,21 @@ while True:
                                 print(leftcolor)
                                 glasses.show()
                                 time.sleep(0.05)
-
                             for i in range(14, 23):
                                 left_ring[i] = 0
                                 glasses.show()
                                 time.sleep(0.05)
+
                         elif not motionboolean:
                             for i in range(14, 23):
-                                left_ring[i] = leftcolor # blue in hex rgb
+                                left_ring[i] = leftcolor
                             glasses.show()
                             time.sleep(0.5)
-
                             for i in range(14, 23):
                                 left_ring[i] = 0
                             glasses.show()
                             time.sleep(0.5)
-                            
+                # TODO: FINISH UPDATING THE CODE TO SUIT THE MOVEMENT BOOLEAN
                 # RIGHT
                 elif message.startswith('RIGHT'):
                     for count in range(0, 2):
@@ -244,10 +245,9 @@ while True:
                         message = message[:16]
 
                     decoded_bytes = binascii.a2b_base64(message)
-                    print(decoded_bytes)
 
                     # Check the structure of the message
-                    settingscheck = decoded_bytes[0] != 0x01 or decoded_bytes[2] != 0x02 or decoded_bytes[4] != 0x03 or decoded_bytes[6] != 0x04 or decoded_bytes[8] != 0x05 or decoded_bytes[10] != 0x06
+                    settingscheck = decoded_bytes[0] != 0x01 or decoded_bytes[2] != 0x02 or decoded_bytes[4] != 0x03 or decoded_bytes[6] != 0x04 or decoded_bytes[8] != 0x05 or decoded_bytes[10] != 0x06 or decoded_bytes[11] != 0x07 or decoded_bytes[11] != 0x08
 
                     for i in range(0, 11):
                         # Check if the byte is in order and not higher than 0x08
