@@ -88,6 +88,80 @@ def apply_settings(decoded_bytes):
         elif setting == "LED":
             motionboolean = color
 
+def update_left_str():
+    for i in range(21, 24):
+        left_ring[i] = strcolor
+        glasses.show()
+        time.sleep(0.025)
+        yield
+    for i in range(0, 3):
+        left_ring[i] = strcolor
+        glasses.show()
+        time.sleep(0.025)
+        yield
+def update_right_str():
+    for i in range(3, -1, -1):
+        right_ring[i] = strcolor
+        print("rightring -1 ",i)
+        glasses.show()
+        time.sleep(0.025)
+        yield
+    for x in range(23, 21, -1):
+        right_ring[x] = strcolor
+        print(x)
+        glasses.show()
+        time.sleep(0.025)
+        yield
+
+def reset_left_str():
+    for i in range(21, 24):
+        left_ring[i] = 0
+        glasses.show()
+        time.sleep(0.025)
+        yield
+    for i in range(0, 3):
+        left_ring[i] = 0
+        glasses.show()
+        time.sleep(0.025)
+        yield
+def reset_right_str():
+    for i in range(3, -1, -1):
+        right_ring[i] = 0
+        glasses.show()
+        time.sleep(0.025)
+        yield
+    for i in range(23, 21, -1):
+        right_ring[i] = 0
+        glasses.show()
+        time.sleep(0.025)
+        yield
+
+def update_left_turn():
+    for i in range(9, 17):
+        left_ring[i] = turncolor
+        glasses.show()
+        time.sleep(0.025)
+        yield
+def update_right_turn():
+    for i in range(15, 8, -1):
+        right_ring[i] = turncolor
+        glasses.show()
+        time.sleep(0.025)
+        yield
+
+def reset_left_turn():
+    for i in range(9, 17):
+        left_ring[i] = 0
+        glasses.show()
+        time.sleep(0.025)
+        yield
+def reset_right_turn():
+    for i in range(15, 8, -1):
+        right_ring[i] = 0
+        glasses.show()
+        time.sleep(0.025)
+        yield
+
 while True:
     ble.start_advertising(advertisement)
     while not ble.connected:
@@ -133,12 +207,12 @@ while True:
                             left_ring[i] = notifcolor
                             right_ring[i] = notifcolor
                             glasses.show() 
-                            time.sleep(0.1)
+                            time.sleep(0.15)
                         for i in range(0, 19, 6):
                             left_ring[i] = 0
                             right_ring[i] = 0
                             glasses.show() 
-                            time.sleep(0.1)
+                            time.sleep(0.15)
 
                     elif not motionboolean:
                         for i in range(0, 19, 6):
@@ -180,62 +254,110 @@ while True:
                 # RIGHT
                 elif message.startswith('RIGHT'):
                     for count in range(0, 2):
-                        # light up the right side of the right ring
-                        for i in range(2, 10):
-                            right_ring[i] = rightcolor # blue in hex rgb
+                        if motionboolean:
+                            # light up the right side of the right ring
+                            for i in range(2, 10):
+                                right_ring[i] = rightcolor # blue in hex rgb
+                                glasses.show()
+                                time.sleep(0.05)
+                            for i in range(2, 10):
+                                right_ring[i] = 0
+                                glasses.show()
+                                time.sleep(0.05)
+                        elif not motionboolean:
+                            # light up the right side of the right ring
+                            for i in range(2, 10):
+                                right_ring[i] = rightcolor # blue in hex rgb
                             glasses.show()
-                            time.sleep(0.05)
-
-                        for i in range(2, 10):
-                            right_ring[i] = 0
+                            time.sleep(0.5)
+                            for i in range(2, 10):
+                                right_ring[i] = 0
                             glasses.show()
-                            time.sleep(0.05)
+                            time.sleep(0.5)
 
                 #STR
                 elif message.startswith('STR'):
                     for count in range(0, 2):
-                        # light up top of left ring
-                        for i in range(0, 3):
-                            left_ring[i] = strcolor
-                        for i in range(21, 24):
-                            left_ring[i] = strcolor
+                        if motionboolean:
+                            left = update_left_str()
+                            right = update_right_str()
+                            while True:
+                                try:
+                                    next(right)
+                                    next(left)
+                                except StopIteration:
+                                    break
 
-                        # light up top of right ring
-                        for i in range(0, 4):
-                            right_ring[i] = strcolor
-                        for i in range(22, 24):
-                            right_ring[i] = strcolor
-                        glasses.show()
+                            # Repeat for resetting LEDs
+                            left = reset_left_str()
+                            right = reset_right_str()
+                            while True:
+                                try:
+                                    next(right)
+                                    next(left)
+                                except StopIteration:
+                                    break
 
-                        # reset leds
-                        time.sleep(0.5)
-                        for i in range(0, 24):
-                            left_ring[i] = 0
-                            right_ring[i] = 0
-                        glasses.show()
-                        time.sleep(0.25)
+                        elif not motionboolean:
+                            # light up top of left ring
+                            for i in range(0, 3):
+                                left_ring[i] = strcolor
+                            for i in range(21, 24):
+                                left_ring[i] = strcolor
+
+                            # light up top of right ring
+                            for i in range(0, 4):
+                                right_ring[i] = strcolor
+                            for i in range(22, 24):
+                                right_ring[i] = strcolor
+                            glasses.show()
+
+                            # reset leds
+                            time.sleep(0.5)
+                            for i in range(0, 24):
+                                left_ring[i] = 0
+                                right_ring[i] = 0
+                            glasses.show()
+                            time.sleep(0.5)
                 # TURN
                 elif message.startswith('TURN'):
                     #led from the bottom - MAYBE MAKE IT TO DO AN ANIMATION LATER ON
                     for count in range(0, 2):
-                        # light up bottom of left ring
-                        for i in range(9, 16):
-                            left_ring[i] = turncolor
+                        if motionboolean:
+                            left = update_left_turn()
+                            right = update_right_turn()
+                            while True:
+                                try:
+                                    next(right)
+                                    next(left)
+                                except StopIteration:
+                                    break
 
-                        # light up bottom of right ring
-                        for i in range(9, 16):
-                            right_ring[i] = turncolor
-                        glasses.show()
+                            # Repeat for resetting LEDs
+                            left = reset_left_turn()
+                            right = reset_right_turn()
+                            while True:
+                                try:
+                                    next(right)
+                                    next(left)
+                                except StopIteration:
+                                    break
 
-                        # reset leds
-                        time.sleep(0.5)
-                        for i in range(0, 24):
-                            left_ring[i] = 0
-                            right_ring[i] = 0
-                        glasses.show()
-                        time.sleep(0.25)
+                        elif not motionboolean:
+                            # light up bottom of left ring
+                            for i in range(9, 16):
+                                left_ring[i] = turncolor
+                                right_ring[i] = turncolor
+                            glasses.show()
+
+                            # reset leds
+                            time.sleep(0.5)
+                            for i in range(9, 16):
+                                left_ring[i] = 0
+                                right_ring[i] = 0
+                            glasses.show()
+                            time.sleep(0.5)
                 else:
-                    
                     # Check size of message. If the message has a length less than 16, this message is not for setting configuration.
                     # If the size of the message is more than 16, there was likely an issue with messages being sent too quickly. 
                     if len(message) < 16:
@@ -245,18 +367,23 @@ while True:
                         message = message[:16]
 
                     decoded_bytes = binascii.a2b_base64(message)
+                    print(decoded_bytes)
 
                     # Check the structure of the message
-                    settingscheck = decoded_bytes[0] != 0x01 or decoded_bytes[2] != 0x02 or decoded_bytes[4] != 0x03 or decoded_bytes[6] != 0x04 or decoded_bytes[8] != 0x05 or decoded_bytes[10] != 0x06 or decoded_bytes[11] != 0x07 or decoded_bytes[11] != 0x08
-
+                    settingscheck = decoded_bytes[0] != 0x01 or decoded_bytes[2] != 0x02 or decoded_bytes[4] != 0x03 or decoded_bytes[6] != 0x04 or decoded_bytes[8] != 0x05 or decoded_bytes[10] != 0x06
+                    if decoded_bytes[11] in (0x07, 0x08):
+                        booleancheck = False
+                    else:
+                        booleancheck = True
+                    
                     for i in range(0, 11):
                         # Check if the byte is in order and not higher than 0x08
-                        if settingscheck or decoded_bytes[i] > 0x08:
+                        if (settingscheck) or (booleancheck) or (decoded_bytes[i] > 0x08):
                             print("Invalid message structure")
                             break
-
-                    # Call the function with your decoded bytes
-                    apply_settings(decoded_bytes)
+                        else:
+                            # Call the function with your decoded bytes
+                            apply_settings(decoded_bytes)  
 
     # If we got here, we lost the connection. Go up to the top and start
     # advertising again and waiting for a connection.
