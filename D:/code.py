@@ -11,17 +11,13 @@ from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
 from adafruit_ble import BLERadio
 from adafruit_ble.attributes import Attribute
-# from adafruit_ble.attributes import Characteristic
 from adafruit_ble.characteristics import Characteristic
 from adafruit_ble.services import Service
 from adafruit_ble.uuid import StandardUUID
-import busio
 from rainbowio import colorwheel
-import is31fl3741
 import neopixel
-# import base64
 import binascii
-
+from adafruit_debouncer import Debouncer
 
 led = digitalio.DigitalInOut(board.LED)
 led.direction = digitalio.Direction.OUTPUT
@@ -34,13 +30,21 @@ i2c = board.I2C()  # uses board.SCL and board.SDA
 glasses = LED_Glasses(i2c, allocate=adafruit_is31fl3741.MUST_BUFFER)
 glasses.show() #clear residual data
 glasses.global_current = 20
+glasses.set_led_scaling(50)
+
+brightness_levels = [10, 25, 50, 100, 150, 200, 255]
+brightness_index = 0
+
+button = digitalio.DigitalInOut(board.SWITCH)
+# switch_pin.direction = digitalio.Direction.INPUT
+button.switch_to_input(pull = digitalio.Pull.UP)
 
 left_ring = glasses.left_ring
 
 right_ring = glasses.right_ring
 
 pixel_pin = board.NEOPIXEL
-pixels = neopixel.NeoPixel(pixel_pin, 1, brightness=0.3, auto_write=False)
+pixels = neopixel.NeoPixel(pixel_pin, 1, brightness=0.1, auto_write=False)
 
 RED = 0xFF0000      # red in hex rgb
 PURPLE = 0x800080   # purple in hex rgb
@@ -56,7 +60,12 @@ strcolor = GREEN
 turncolor = RED
 motionboolean = True
 
-def apply_settings(decoded_bytes):
+def apply_settings(decoded_bytes: bytes) -> None:
+    """decodes bytes into settings and colors and applies them to the glasses
+
+    Args:
+        decoded_bytes (bytes): settings and colors in bytes
+    """    
 
     global notifcolor, leftcolor, rightcolor, strcolor, turncolor, motionboolean
 
@@ -87,6 +96,8 @@ def apply_settings(decoded_bytes):
             turncolor = color
         elif setting == "LED":
             motionboolean = color
+
+    return
 
 def update_left_str():
     for i in range(21, 24):
@@ -162,39 +173,99 @@ def reset_right_turn():
         time.sleep(0.025)
         yield
 
-while True:
-    ble.start_advertising(advertisement)
-    while not ble.connected:
-        #check if trying to connect
-        # led.value = True
-        # time.sleep(0.5)
-        # led.value = False
-        # time.sleep(0.5)
-        pixels.fill((255, 0, 0))
-        pixels.show()
-        time.sleep(0.4)
-        pixels.fill((0, 0, 255))
-        pixels.show()
-        time.sleep(0.4)
-        pass
+def adjust_brightness():
+    global brightness_index
 
-    # Now we're connected
+    # If the brightness index exceeds the maximum
+    if brightness_index >= len(brightness_levels):
+        # Reset the brightness index to the first
+        brightness_index = 0
 
-    glasses.fill(2)
-    glasses.show()
-    time.sleep(0.5)
-    glasses.fill(0)
+    # Set the brightness of the LEDs
+    glasses.set_led_scaling(brightness_levels[brightness_index])
+
+    # Increase the brightness index
+    brightness_index += 1
+
+    # Show the changes
     glasses.show()
     led.value = True
     time.sleep(0.5)
     led.value = False
+    time.sleep(0.5)
 
-#todo: need to either check for new line so add \n to the end of the message and then use readline instead. im pretty sure that the main reason for the issue is because the notifications get duplicated somewhere on the app.
+# Previous switch state
+prev_switch_state = button.value
+
+while True:
+    ble.start_advertising(advertisement)
+    while not ble.connected:
+
+        if not button.value:
+            adjust_brightness()
+
+        # Light up LEDs with blue and red for advertising connection
+
+        # Light LEDs on the glasses with RED and microcontroller with BLUE
+        for i in range(18, 21):
+            right_ring[i] = RED
+        for i in range(4, 7):
+            left_ring[i] = RED
+        pixels.fill((0, 0, 255))
+        pixels.show()
+        glasses.show()
+
+        time.sleep(0.5)
+        
+        if not button.value:
+            adjust_brightness()
+
+        # Light LEDs on the glasses with BLUE and microcontroller with RED
+        for i in range(18, 21):
+            right_ring[i] = BLUE
+        for i in range(4, 7):
+            left_ring[i] = BLUE
+        pixels.fill((255, 0, 0))
+        pixels.show()
+        glasses.show()
+
+        time.sleep(0.5)
+
+    # Light up LEDs to indicate connection
+    for count in range(0, 2):
+
+        if not button.value:
+            adjust_brightness()
+
+        for i in range(0, 24):
+            right_ring[i] = GREEN
+        for i in range(0, 24):
+            left_ring[i] = GREEN
+        pixels.fill((0, 255, 0))
+        pixels.show()
+        glasses.show()
+        time.sleep(0.25)
+
+        if not button.value:
+            adjust_brightness()
+
+        for i in range(0, 24):
+            right_ring[i] = 0
+        for i in range(0, 24):
+            left_ring[i] = 0
+        glasses.show() 
 
     while ble.connected:
+
+        if not button.value:
+            adjust_brightness()
+
         if uart.in_waiting:
-            # TESTING FOR NOTIFICATION ADDITION
             data = uart.read(32)
+
+            if not button.value:
+                adjust_brightness()
+
             if data is not None:
                 message = data.decode("utf-8")
                 print("message received")
@@ -219,12 +290,12 @@ while True:
                             left_ring[i] = notifcolor
                             right_ring[i] = notifcolor
                         glasses.show() 
-                        time.sleep(0.5)
+                        time.sleep(1)
                         for i in range(0, 19, 6):
                             left_ring[i] = 0
                             right_ring[i] = 0
                         glasses.show() 
-                        time.sleep(0.5)
+                        time.sleep(1)
 
                 # LEFT
                 elif message.startswith('LEFT'):
@@ -250,7 +321,7 @@ while True:
                                 left_ring[i] = 0
                             glasses.show()
                             time.sleep(0.5)
-                # TODO: FINISH UPDATING THE CODE TO SUIT THE MOVEMENT BOOLEAN
+
                 # RIGHT
                 elif message.startswith('RIGHT'):
                     for count in range(0, 2):
@@ -389,4 +460,3 @@ while True:
     # advertising again and waiting for a connection.
 
 
-    
