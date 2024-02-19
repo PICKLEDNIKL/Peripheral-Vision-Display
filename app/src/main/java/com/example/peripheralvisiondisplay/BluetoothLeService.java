@@ -21,6 +21,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Base64;
 import android.util.Log;
@@ -30,6 +31,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -80,6 +82,10 @@ public class BluetoothLeService extends Service {
 
     private boolean isServiceRunning = false;
 
+    private Handler handler = new Handler();
+    private ArrayList<String> messageQueue = new ArrayList<>();
+    private boolean isMessageScheduled = false;
+
     private final BluetoothGattCallback bluetoothGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -116,7 +122,7 @@ public class BluetoothLeService extends Service {
         public void onReceive(Context context, Intent intent) {
             if ("com.example.peripheralvisiondisplay.NEW_NOTIFICATION".equals(intent.getAction())) {
 //                Log.d(TAG, "check if duped notifications");
-                sendMessage("NOTIF");
+                queueMessage("NOTIF");
             }
         }
     };
@@ -124,13 +130,13 @@ public class BluetoothLeService extends Service {
     public void sendDirectionInfo(String direction) {
         if (direction != null){
             if (direction.toLowerCase().contains("left")){
-                sendMessage("LEFT");
+                queueMessage("LEFT");
             } else if (direction.toLowerCase().contains("right")){
-                sendMessage("RIGHT");
+                queueMessage("RIGHT");
             } else if (direction.toLowerCase().contains("straight")){
-                sendMessage("STR");
+                queueMessage("STR");
             } else{
-                sendMessage("NOTIF");
+                queueMessage("NOTIF");
             }
         }
     }
@@ -177,7 +183,8 @@ public class BluetoothLeService extends Service {
 
 //        Log.d(TAG, "sendSettingPref: " + notifColor + "," + leftColor + "," + rightColor + "," + straightColor + "," + turnColor + "," + ledMovement);
 
-        sendMessage(message);
+//        sendMessage(message);
+        queueMessage(message);
     }
 
     private byte[] settingConverter(String setting, int color) {
@@ -194,6 +201,8 @@ public class BluetoothLeService extends Service {
             settingBytes[0] = (byte) 4;
         } else if (setting.equals("TURN")) {
             settingBytes[0] = (byte) 5;
+        } else if (setting.equals("LED")) {
+            settingBytes[0] = (byte) 6;
         } else {
             settingBytes[0] = (byte) 0;
         }
@@ -211,6 +220,10 @@ public class BluetoothLeService extends Service {
             settingBytes[1] = (byte) 5;
         } else if (color == Color.parseColor("#FFA500")) { // Orange
             settingBytes[1] = (byte) 6;
+        } else if (color == 1){
+            settingBytes[1] = (byte) 7; //true
+        } else if (color == 0){
+            settingBytes[1] = (byte) 8; //false
         } else {
             settingBytes[1] = (byte) 0;
         }
@@ -448,6 +461,40 @@ public class BluetoothLeService extends Service {
                 Log.i(TAG, "Characteristic UUID: " + characteristic.getUuid().toString());
             }
         }
+    }
+
+    public void queueMessage(String message) {
+        // Add the message to the queue
+        messageQueue.add(message);
+
+        // If this is the only message in the queue, send it
+        if (messageQueue.size() == 1 && !isMessageScheduled) {
+            sendNextMessage();
+        }
+    }
+
+    private void sendNextMessage() {
+        // If there are no more messages, return
+        if (messageQueue.isEmpty()) {
+            isMessageScheduled = false;
+            return;
+        }
+
+        // Send the first message in the queue
+        String message = messageQueue.get(0);
+        sendMessage(message);
+
+        // Remove the message from the queue
+        messageQueue.remove(0);
+
+        // Schedule the sending of the next message after a delay
+        isMessageScheduled = true;
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                sendNextMessage();
+            }
+        }, 2500); //2.5 seconds
     }
 
     public void sendMessage(String message) {

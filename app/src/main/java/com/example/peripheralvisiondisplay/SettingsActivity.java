@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.view.View;
 import android.widget.AdapterView;
@@ -55,6 +56,8 @@ public class SettingsActivity extends AppCompatActivity {
     int selectedRightColor;
     int selectedStraightColor;
     int selectedTurnColor;
+
+    private Handler handler = new Handler();
 
 
     SharedPreferences ledsharedPref;
@@ -141,6 +144,7 @@ public class SettingsActivity extends AppCompatActivity {
         saveChangesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                saveChangesButton.setEnabled(false);
                 // Save the current state of the Spinner to shared preferences
                 String selectedImportanceLevel = spinner.getSelectedItem().toString();
                 SharedPreferences.Editor editor = sharedPref.edit();
@@ -162,6 +166,13 @@ public class SettingsActivity extends AppCompatActivity {
                 bluetoothLeService.sendSettingPref(ledsharedPref);
 
                 Toast.makeText(SettingsActivity.this, "Changes saved", Toast.LENGTH_SHORT).show();
+
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        saveChangesButton.setEnabled(true);
+                    }
+                }, 2500); // 2.5 seconds
             }
         });
 
@@ -171,6 +182,8 @@ public class SettingsActivity extends AppCompatActivity {
         resetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                resetButton.setEnabled(false);
+
                 // Reset the shared preferences to their default values
                 SharedPreferences.Editor editor = ledsharedPref.edit();
                 editor.putInt("notifColor", Color.YELLOW);
@@ -201,8 +214,15 @@ public class SettingsActivity extends AppCompatActivity {
 
                 // Send the preferences to the Bluetooth device
                 bluetoothLeService.sendSettingPref(ledsharedPref);
-
                 Toast.makeText(SettingsActivity.this, "Settings reset and saved", Toast.LENGTH_SHORT).show();
+
+                // Enable the button after 5 seconds
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        resetButton.setEnabled(true);
+                    }
+                }, 2500); // 2.5 seconds
             }
         });
 
