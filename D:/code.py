@@ -30,14 +30,9 @@ i2c = board.I2C()  # uses board.SCL and board.SDA
 glasses = LED_Glasses(i2c, allocate=adafruit_is31fl3741.MUST_BUFFER)
 glasses.show() #clear residual data
 glasses.global_current = 20
-glasses.set_led_scaling(50)
+# glasses.set_led_scaling(100)
 
-brightness_levels = [10, 25, 50, 100, 150, 200, 255]
-brightness_index = 0
-
-button = digitalio.DigitalInOut(board.SWITCH)
-# switch_pin.direction = digitalio.Direction.INPUT
-button.switch_to_input(pull = digitalio.Pull.UP)
+brightness_levels = [5, 15, 30, 75, 125, 175, 255]
 
 left_ring = glasses.left_ring
 
@@ -70,14 +65,17 @@ def apply_settings(decoded_bytes: bytes) -> None:
     global notifcolor, leftcolor, rightcolor, strcolor, turncolor, motionboolean
 
     # Define the mappings from byte values to settings and colors
-    settings_map = {1: "NOTIF", 2: "LEFT", 3: "RIGHT", 4: "STR", 5: "TURN", 6: "LED"}
+    settings_map = {1: "NOTIF", 2: "LEFT", 3: "RIGHT", 4: "STR", 5: "TURN", 6: "LED", 7: "BRIGHT"}
     colors_map = {1: RED, 2: PURPLE, 3: BLUE, 4: GREEN, 5: YELLOW, 6: ORANGE, 7: True, 8: False}
 
     # Iterate over the bytes in pairs
     for i in range(0, len(decoded_bytes), 2):
         # Get the setting and color from the byte values
         setting = settings_map.get(decoded_bytes[i], "UNKNOWN")
-        color = colors_map.get(decoded_bytes[i + 1], "UNKNOWN")
+        if setting != "BRIGHT":
+            color = colors_map.get(decoded_bytes[i + 1], "UNKNOWN")
+        else:
+            brightness = decoded_bytes[i + 1]
 
         # Apply the setting
         # print(f"Applying setting {setting} with color {color}")
@@ -96,7 +94,13 @@ def apply_settings(decoded_bytes: bytes) -> None:
             turncolor = color
         elif setting == "LED":
             motionboolean = color
-
+        elif setting == "BRIGHT":
+            adjust_brightness(brightness)
+    pixels.fill((255, 255, 0))
+    pixels.show()
+    # time.sleep(1)
+    # pixels.fill((0, 0, 0))
+    # pixels.show()
     return
 
 def update_left_str():
@@ -173,37 +177,21 @@ def reset_right_turn():
         time.sleep(0.025)
         yield
 
-def adjust_brightness():
-    global brightness_index
-
-    # If the brightness index exceeds the maximum
-    if brightness_index >= len(brightness_levels):
-        # Reset the brightness index to the first
-        brightness_index = 0
+def adjust_brightness(brightness):
 
     # Set the brightness of the LEDs
-    glasses.set_led_scaling(brightness_levels[brightness_index])
-
-    # Increase the brightness index
-    brightness_index += 1
+    glasses.set_led_scaling(brightness_levels[brightness])
 
     # Show the changes
     glasses.show()
-    led.value = True
-    time.sleep(0.5)
-    led.value = False
-    time.sleep(0.5)
-
-# Previous switch state
-prev_switch_state = button.value
+    return
 
 while True:
+    if ble.advertising:
+        ble.stop_advertising()
+    # if not ble.advertising:
     ble.start_advertising(advertisement)
     while not ble.connected:
-
-        if not button.value:
-            adjust_brightness()
-
         # Light up LEDs with blue and red for advertising connection
 
         # Light LEDs on the glasses with RED and microcontroller with BLUE
@@ -216,9 +204,6 @@ while True:
         glasses.show()
 
         time.sleep(0.5)
-        
-        if not button.value:
-            adjust_brightness()
 
         # Light LEDs on the glasses with BLUE and microcontroller with RED
         for i in range(18, 21):
@@ -234,9 +219,6 @@ while True:
     # Light up LEDs to indicate connection
     for count in range(0, 2):
 
-        if not button.value:
-            adjust_brightness()
-
         for i in range(0, 24):
             right_ring[i] = GREEN
         for i in range(0, 24):
@@ -246,9 +228,6 @@ while True:
         glasses.show()
         time.sleep(0.25)
 
-        if not button.value:
-            adjust_brightness()
-
         for i in range(0, 24):
             right_ring[i] = 0
         for i in range(0, 24):
@@ -257,14 +236,8 @@ while True:
 
     while ble.connected:
 
-        if not button.value:
-            adjust_brightness()
-
         if uart.in_waiting:
             data = uart.read(32)
-
-            if not button.value:
-                adjust_brightness()
 
             if data is not None:
                 message = data.decode("utf-8")
@@ -431,30 +404,44 @@ while True:
                 else:
                     # Check size of message. If the message has a length less than 16, this message is not for setting configuration.
                     # If the size of the message is more than 16, there was likely an issue with messages being sent too quickly. 
-                    if len(message) < 16:
-                        print("Message too short")
+                    if len(message) < 17 and len(message) > 5:
+                        print("Message length is incorrect")
                         break
-                    elif len(message) > 16:
-                        message = message[:16]
+                    elif len(message) > 17:
+                        message = message[:17]
 
-                    decoded_bytes = binascii.a2b_base64(message)
-                    print(decoded_bytes)
+                    if len(message) == 17:
+                        # Decode the message from base64
+                        decoded_bytes = binascii.a2b_base64(message)
+                        print(decoded_bytes)
 
-                    # Check the structure of the message
-                    settingscheck = decoded_bytes[0] != 0x01 or decoded_bytes[2] != 0x02 or decoded_bytes[4] != 0x03 or decoded_bytes[6] != 0x04 or decoded_bytes[8] != 0x05 or decoded_bytes[10] != 0x06
-                    if decoded_bytes[11] in (0x07, 0x08):
-                        booleancheck = False
-                    else:
-                        booleancheck = True
-                    
-                    for i in range(0, 11):
-                        # Check if the byte is in order and not higher than 0x08
-                        if (settingscheck) or (booleancheck) or (decoded_bytes[i] > 0x08):
-                            print("Invalid message structure")
+                        # Check the structure of the message
+                        settingscheck = decoded_bytes[0] != 0x01 or decoded_bytes[2] != 0x02 or decoded_bytes[4] != 0x03 or decoded_bytes[6] != 0x04 or decoded_bytes[8] != 0x05 or decoded_bytes[10] != 0x06
+                        if decoded_bytes[11] in (0x07, 0x08):
+                            booleancheck = False
+                        else:
+                            booleancheck = True
+                        
+                        for i in range(0, 11):
+                            # Check if the byte is in order and not higher than 0x08
+                            if (settingscheck) or (booleancheck) or (decoded_bytes[i] > 0x08):
+                                print("Invalid message structure")
+                                break
+                            else:
+                                # Call the function with your decoded bytes
+                                apply_settings(decoded_bytes)  
+                                break
+                    # If the message is equal to 5, the message is for brightness settings.
+                    elif len(message) == 5:
+                        decoded_bytes = binascii.a2b_base64(message)
+                        print(decoded_bytes)
+                        brightnesscheck = decoded_bytes[0] != 0x07
+                        if brightnesscheck:
+                            print("Invalid brightness message")
                             break
                         else:
-                            # Call the function with your decoded bytes
-                            apply_settings(decoded_bytes)  
+                            apply_settings(decoded_bytes)
+                            break
 
     # If we got here, we lost the connection. Go up to the top and start
     # advertising again and waiting for a connection.
