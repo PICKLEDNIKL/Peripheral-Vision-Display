@@ -146,7 +146,7 @@
                 android:id="@+id/straightbutton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="''Go Sraight'' Colour"
+                android:text="''Go Straight'' Colour"
                 android:layout_below="@+id/rightbutton"
                 android:layout_marginLeft="10dp"
                 android:layout_marginTop="20dp"/>
@@ -167,7 +167,6 @@
                 android:text="''Wrong Way'' Colour"
                 android:layout_below="@+id/straightbutton"
                 android:layout_marginLeft="10dp"
-                android:layout_marginBottom="70dp"
                 android:layout_marginTop="20dp"/>
             <View
                 android:id="@+id/turncolour"
@@ -177,30 +176,31 @@
                 android:layout_below="@+id/straightbutton"
                 android:layout_toRightOf="@+id/turnbutton"
                 android:layout_marginLeft="10dp"
-                android:layout_marginBottom="70dp"
                 android:layout_marginTop="20dp" />
 
+            <TextView
+                android:id="@+id/brightnesstext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Brightness level (Notification service will work for any notifications above and equal to the threshold chosen):"
+                android:layout_marginLeft="20dp"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textColor="@color/black"
+                android:layout_marginTop="20dp"
+                android:layout_below="@+id/notificationheader"
+                android:textSize="15sp"/>
 
+            <SeekBar
+                android:id="@+id/brightnessSeekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/turnbutton"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="70dp"
+                android:max="6"
+                android:progress="3" />
 
-<!--            <Button-->
-<!--                android:id="@+id/saveChangesButton"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="Save Changes"-->
-<!--                android:layout_below="@id/turnbutton"-->
-<!--                android:layout_centerHorizontal="true"-->
-<!--                android:layout_marginTop="30dp"-->
-<!--                android:layout_marginBottom="20dp"/>-->
-
-<!--            <Button-->
-<!--                android:id="@+id/resetButton"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="Reset"-->
-<!--                android:layout_below="@id/saveChangesButton"-->
-<!--                android:layout_centerHorizontal="true"-->
-<!--                android:layout_marginTop="30dp"-->
-<!--                android:layout_marginBottom="20dp"/>-->
         </RelativeLayout>
     </ScrollView>
     <LinearLayout

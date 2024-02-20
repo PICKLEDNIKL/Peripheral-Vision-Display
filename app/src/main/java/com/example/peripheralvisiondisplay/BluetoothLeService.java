@@ -145,12 +145,13 @@ public class BluetoothLeService extends Service {
 
 //        ledsharedPref = getSharedPreferences("LedPreferences", Context.MODE_PRIVATE);
 
-        int notifColor = ledsharedPref.getInt("notifColor", 0);
-        int leftColor = ledsharedPref.getInt("leftColor", 0);
-        int rightColor = ledsharedPref.getInt("rightColor", 0);
-        int straightColor = ledsharedPref.getInt("straightColor", 0);
-        int turnColor = ledsharedPref.getInt("turnColor", 0);
-        boolean ledMovement = ledsharedPref.getBoolean("led_movement", false);
+        int notifColor = ledsharedPref.getInt("notifColor", Color.YELLOW);
+        int leftColor = ledsharedPref.getInt("leftColor", Color.BLUE);
+        int rightColor = ledsharedPref.getInt("rightColor", Color.BLUE);
+        int straightColor = ledsharedPref.getInt("straightColor", Color.GREEN);
+        int turnColor = ledsharedPref.getInt("turnColor", Color.RED);
+        boolean ledMovement = ledsharedPref.getBoolean("led_movement", true);
+        int brightness = ledsharedPref.getInt("brightness", 3);
 
         // Convert the settings to byte arrays
         byte[] notifColorBytes = settingConverter("NOTIF", notifColor);
@@ -159,15 +160,8 @@ public class BluetoothLeService extends Service {
         byte[] straightColorBytes = settingConverter("STR", straightColor);
         byte[] turnColorBytes = settingConverter("TURN", turnColor);
         byte[] ledMovementBytes = settingConverter("LED", ledMovement ? 1 : 0);
-
-        // Concatenate the byte arrays into a single byte array
-//        byte[] byteArray = new byte[12];
-//        System.arraycopy(notifColorBytes, 0, byteArray, 0, 2);
-//        System.arraycopy(leftColorBytes, 0, byteArray, 2, 2);
-//        System.arraycopy(rightColorBytes, 0, byteArray, 4, 2);
-//        System.arraycopy(straightColorBytes, 0, byteArray, 6, 2);
-//        System.arraycopy(turnColorBytes, 0, byteArray, 8, 2);
-//        System.arraycopy(ledMovementBytes, 0, byteArray, 10, 2);
+        byte[] brightnessBytes = {(byte) 7, (byte) brightness};
+//        byte[] brightnessBytes = settingConverter("BRIGHT", (byte) brightness);
 
 
         ByteBuffer byteBuffer = ByteBuffer.allocate(12);
@@ -179,12 +173,18 @@ public class BluetoothLeService extends Service {
         byteBuffer.put(ledMovementBytes);
         byte[] byteArray = byteBuffer.array();
 
+        ByteBuffer byteBuffer2 = ByteBuffer.allocate(2);
+        byteBuffer2.put(brightnessBytes);
+        byte[] byteArray2 = byteBuffer2.array();
+
         String message = Base64.encodeToString(byteArray, Base64.DEFAULT);
+        String message2 = Base64.encodeToString(byteArray2, Base64.DEFAULT);
 
 //        Log.d(TAG, "sendSettingPref: " + notifColor + "," + leftColor + "," + rightColor + "," + straightColor + "," + turnColor + "," + ledMovement);
 
 //        sendMessage(message);
         queueMessage(message);
+        queueMessage(message2);
     }
 
     private byte[] settingConverter(String setting, int color) {

@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.Toast;
@@ -61,6 +62,8 @@ public class SettingsActivity extends AppCompatActivity {
 
 
     SharedPreferences ledsharedPref;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,6 +120,8 @@ public class SettingsActivity extends AppCompatActivity {
         boolean ledMovement = ledsharedPref.getBoolean("led_movement", true);
         switchLedMovement.setChecked(ledMovement);
 
+        SeekBar brightnessSeekBar = findViewById(R.id.brightnessSeekBar);
+        brightnessSeekBar.setProgress(ledsharedPref.getInt("brightness", 3));
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
@@ -160,6 +165,7 @@ public class SettingsActivity extends AppCompatActivity {
                 editor.putInt("straightColor", selectedStraightColor);
                 editor.putInt("turnColor", selectedTurnColor);
                 editor.putBoolean("led_movement", switchLedMovement.isChecked());
+                editor.putInt("brightness", brightnessSeekBar.getProgress());
                 editor.apply();
 
                 // Send the preferences to the Bluetooth device
@@ -192,6 +198,7 @@ public class SettingsActivity extends AppCompatActivity {
                 editor.putInt("straightColor", Color.GREEN);
                 editor.putInt("turnColor", Color.RED);
                 editor.putBoolean("led_movement", true);
+                editor.putInt("brightness", 3);
                 editor.apply();
 
                 // Update the UI to reflect the changes
@@ -201,6 +208,7 @@ public class SettingsActivity extends AppCompatActivity {
                 colourStraight.setBackgroundColor(Color.GREEN);
                 colourTurn.setBackgroundColor(Color.RED);
                 switchLedMovement.setChecked(true);
+                brightnessSeekBar.setProgress(3);
 
                 // Reset the importance level to its default value
                 String defaultImportanceLevel = "Medium"; // Replace with your default value
