@@ -30,7 +30,7 @@ i2c = board.I2C()  # uses board.SCL and board.SDA
 glasses = LED_Glasses(i2c, allocate=adafruit_is31fl3741.MUST_BUFFER)
 glasses.show() #clear residual data
 glasses.global_current = 20
-# glasses.set_led_scaling(100)
+glasses.set_led_scaling(75)
 
 brightness_levels = [5, 15, 30, 75, 125, 175, 255]
 
@@ -39,7 +39,7 @@ left_ring = glasses.left_ring
 right_ring = glasses.right_ring
 
 pixel_pin = board.NEOPIXEL
-pixels = neopixel.NeoPixel(pixel_pin, 1, brightness=0.1, auto_write=False)
+pixels = neopixel.NeoPixel(pixel_pin, 1, brightness=0.02, auto_write=False)
 
 RED = 0xFF0000      # red in hex rgb
 PURPLE = 0x800080   # purple in hex rgb
