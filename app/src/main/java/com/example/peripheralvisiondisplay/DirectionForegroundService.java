@@ -5,9 +5,11 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
@@ -40,7 +42,7 @@ import java.util.Queue;
 //todo need to make it so that if the user has walked the wrong way, it can update the directions to accomodate the user.
 //todo: also need to make it so that it tells the user if they are walking the wrong way. i may need to get the previous step information for them to get to the destination of that step before they can continue.
 //todo: check if the user is following the path
-public class DirectionForegroundService extends Service implements SensorEventListener {
+public class DirectionForegroundService extends Service{
 
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
@@ -103,157 +105,31 @@ public class DirectionForegroundService extends Service implements SensorEventLi
         IntentFilter filter2 = new IntentFilter("LocationUpdates");
         registerReceiver(locationUpdateReceiver, filter2);
 
-        // Initialize the SensorManager and sensors
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        stepDetector = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
-
-        // Register for sensor updates
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, stepDetector, SensorManager.SENSOR_DELAY_NORMAL);
+        Intent bleintent = new Intent(this, BluetoothLeService.class);
+        bindService(bleintent, serviceConnection, BIND_AUTO_CREATE);
 
     }
 
-    // Create the lowPassFilter method
-    private float lowPassFilter(float new_value, float last_value) {
-        return last_value * (1.0f - ALPHA) + new_value * ALPHA;
-    }
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            BluetoothLeService.LocalBinder binder = (BluetoothLeService.LocalBinder) service;
+            mBluetoothLeService = binder.getService();
 
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor == accelerometer) {
-//            System.arraycopy(event.values, 0, lastAccelerometer, 0, event.values.length);
-            for (int i = 0; i < 3; i++) {
-                lastAccelerometer[i] = lowPassFilter(event.values[i], lastAccelerometer[i]);
-            }
-            isAccelerometerSet = true;
-        } else if (event.sensor == magnetometer) {
-//            System.arraycopy(event.values, 0, lastMagnetometer, 0, event.values.length);
-            for (int i = 0; i < 3; i++) {
-                lastMagnetometer[i] = lowPassFilter(event.values[i], lastMagnetometer[i]);
-            }
-            isMagnetometerSet = true;
-        } else if (event.sensor == gyroscope) {
-            for (int i = 0; i < 3; i++) {
-                lastgyroscope[i] = lowPassFilter(event.values[i], lastgyroscope[i]);
-            }
-            float pitch = event.values[1]; // Assuming that the pitch is the second value
-
-            // Step 1: Detect the top of the smartphone
-            boolean isUpsideDown = pitch > 90 || pitch < -90; // Adjust the threshold as needed
-
-            // Step 2: Detect the screen of the smartphone and the user's movement direction
-            // This depends on how you are processing the accelerometer data to detect steps
-            // Here is a simple example that checks if the device is moving up or down
-            boolean isMovingUp = lastAccelerometer[2] > 0; // Assuming that the z-axis is the third value
-            boolean isScreenFacingUser = isUpsideDown ? !isMovingUp : isMovingUp;
-
-            // Step 3: Align the smartphone orientation and user orientation
-            if (!isScreenFacingUser) {
-                azimuthInDegrees = (azimuthInDegrees + 180) % 360;
-            }
+            // Send the preferences to the Bluetooth device
+            SharedPreferences ledsharedPref = getSharedPreferences("LedPreferences", Context.MODE_PRIVATE);
+            mBluetoothLeService.sendSettingPref(ledsharedPref);
         }
 
-        // Assume that magnetometerReadings is a list of float arrays, where each array contains the x, y, and z magnetometer readings
-        List<float[]> magnetometerReadings = new ArrayList<>();
-
-        float minX = Float.MAX_VALUE;
-        float minY = Float.MAX_VALUE;
-        float minZ = Float.MAX_VALUE;
-        float maxX = Float.MIN_VALUE;
-        float maxY = Float.MIN_VALUE;
-        float maxZ = Float.MIN_VALUE;
-
-        for (float[] reading : magnetometerReadings) {
-            minX = Math.min(minX, reading[0]);
-            minY = Math.min(minY, reading[1]);
-            minZ = Math.min(minZ, reading[2]);
-            maxX = Math.max(maxX, reading[0]);
-            maxY = Math.max(maxY, reading[1]);
-            maxZ = Math.max(maxZ, reading[2]);
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBluetoothLeService = null;
         }
-
-        float offsetX = (maxX + minX) / 2;
-        float offsetY = (maxY + minY) / 2;
-        float offsetZ = (maxZ + minZ) / 2;
-
-        // Store the offsets in SharedPreferences
-        SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putFloat("offsetX", offsetX);
-        editor.putFloat("offsetY", offsetY);
-        editor.putFloat("offsetZ", offsetZ);
-        editor.apply();
-
-
-
-        // Retrieve the calibrated north setting
-//        SharedPreferences sharedPref = getSharedPreferences("MyApp", Context.MODE_PRIVATE);
-        float calibratedNorth = sharedPref.getFloat("north", 0);
-
-        if (isAccelerometerSet && isMagnetometerSet) {
-            SensorManager.getRotationMatrix(rotationMatrix, null, lastAccelerometer, lastMagnetometer);
-            SensorManager.getOrientation(rotationMatrix, orientation);
-            float azimuthInRadians = orientation[0];
-            azimuthInDegrees = (float) ((Math.toDegrees(azimuthInRadians) + 360) % 360);
-        }
-
-        // Calculate the user's current bearing
-        float userBearing = (azimuthInDegrees - calibratedNorth + 360) % 360;
-        float nextStepBearing = 0;
-        // Check if currentLatLng and currentStepEndLocation are not null
-        if (currentLatLng != null && currentStepEndLocation != null) {
-            // Calculate the bearing towards the next step
-            nextStepBearing = calculateBearing(currentLatLng, currentStepEndLocation);
-//            Log.d("TAG", "next step bearing: " + nextStepBearing);
-            // ... existing code ...
-        } else {
-            // Handle the situation when currentLatLng or currentStepEndLocation is null
-            // For example, you can log an error message
-            Log.e("DirectionForegroundService", "currentLatLng or currentStepEndLocation is null");
-        }
-
-        // Check if the user is facing the wrong direction
-        if (Math.abs(userBearing - nextStepBearing) > BEARING_THRESHOLD) {
-            if (mBluetoothLeService != null) {
-                Log.e("TAG", "turn");
-                mBluetoothLeService.sendMessage("TURN");
-
-            } else {
-                // Handle the situation when mBluetoothLeService is null
-                // For example, you can log an error message
-//                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage turn ");
-            }
-        } else {
-            if (mBluetoothLeService != null) {
-                Log.e("TAG", "str");
-                mBluetoothLeService.sendMessage("STR");
-            } else {
-                // Handle the situation when mBluetoothLeService is null
-                // For example, you can log an error message
-//                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
-            }
-        }
-
-        // ... existing code ...
-    }
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Handle changes in sensor accuracy
-    }
+    };
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Create a notification for this foreground service
-
-        // Request location updates
-//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-////            fusedLocationClient.requestLocationUpdates(createLocationRequest(), locationCallback, Looper.getMainLooper());
-//        }
 
         createNotificationChannel();
         // Create a notification for this foreground service
@@ -292,6 +168,7 @@ public class DirectionForegroundService extends Service implements SensorEventLi
         super.onDestroy();
         fusedLocationClient.removeLocationUpdates(locationCallback);
         unregisterReceiver(stepsDataReceiver);
+        unbindService(serviceConnection);
     }
 
 //    @Nullable
@@ -307,120 +184,82 @@ public class DirectionForegroundService extends Service implements SensorEventLi
             currentLatitude = intent.getDoubleExtra("Latitude", 0);
             currentLongitude = intent.getDoubleExtra("Longitude", 0);
 
-            double newLatitude = intent.getDoubleExtra("Latitude", 0);
-            double newLongitude = intent.getDoubleExtra("Longitude", 0);
-            LatLng newLocation = new LatLng(newLatitude, newLongitude);
+            currentLatLng = new LatLng(currentLatitude, currentLongitude);
 
-            // Check if firstLocation is null
-            if (firstLatlng == null) {
-                // This is the user's first location
-                firstLatlng = newLocation;
+            Location currentLocation = new Location("");
+            currentLocation.setLatitude(currentLatitude);
+            currentLocation.setLongitude(currentLongitude);
+
+            if (currentStepEndLocation == null) {
+                // currentStepEndLocation is not available, skip processing
+                return;
             }
-
-            firstLocation = new Location("");
-            firstLocation.setLatitude(firstLatlng.latitude);
-            firstLocation.setLongitude(firstLatlng.longitude);
-
             Location stependlocation = new Location("");
             stependlocation.setLatitude(currentStepEndLocation.latitude);
             stependlocation.setLongitude(currentStepEndLocation.longitude);
 
-            float bearingfromstart = firstLocation.bearingTo(stependlocation);
-            Log.d("calc bearing from start to end", "onReceive: " + bearingfromstart);
-
-            // Update the LatLng array
-            if (latLngArray[1] != null) {
-                latLngArray[0] = latLngArray[1]; // Move the current LatLng to the previous LatLng
-            }
-            latLngArray[1] = new LatLng(currentLatitude, currentLongitude); // Update the current LatLng
-
-            currentLatLng = new LatLng(currentLatitude, currentLongitude);
-            Log.i("LOCATIONTAG", "directionforegroundlocationreceiver: " + currentLatitude + " " + currentLongitude);
-
-
-            // Get the new location
-            Location nLocation = new Location("");
-            nLocation.setLatitude(currentLatitude);
-            nLocation.setLongitude(currentLongitude);
-
-
-            locationQueue.add(nLocation);
-
-            if (locationQueue.size() > 5) {
-                locationQueue.poll();
-            }
-
-
-//            // Check if the user has moved a significant distance
-//            float distanceMoved = 0;
-//            if (!locationQueue.isEmpty()) {
-//                Location lastLocation = locationQueue.peek();
-//                distanceMoved = lastLocation.distanceTo(nLocation);
-//            }
             float movementThreshold = 5; // Set this to a value that makes sense for your application // this was set to 10 before
-            boolean hasMoved = false;
-            Location[] locations = locationQueue.toArray(new Location[0]);
-            for (int i = 0; i < locations.length - 1; i++) {
-                float distance = locations[i].distanceTo(locations[i + 1]);
-                if (distance > movementThreshold) {
-                    hasMoved = true;
-                    break;
+
+            // Check if the locationQueue is empty
+            if (locationQueue.isEmpty()) {
+                // This is the user's first location, add it to the queue
+                locationQueue.add(currentLocation);
+            } else {
+                // Calculate the distance between the new location and the last location in the queue
+                Location lastLocation = locationQueue.peek();
+                float distanceMoved = lastLocation.distanceTo(currentLocation);
+
+                // If the distance is greater than the movementThreshold, add the new location to the queue
+                if (distanceMoved > movementThreshold) {
+                    locationQueue.add(currentLocation);
+                    Log.d("DirectionForegroundService", "onReceive: location added to queue");
+//                    Toast.makeText(DirectionForegroundService.this, "location added to queue", Toast.LENGTH_SHORT).show();
                 }
             }
 
-            if (hasMoved) {
-                // Calculate the average bearing from these locations
+            if (locationQueue.size() == 4) {
                 float totalBearing = 0;
-                for (Location location : locationQueue) {
-                    totalBearing += location.getBearing();
+                Location[] locations = locationQueue.toArray(new Location[0]);
+                for (int i = 0; i < locations.length - 1; i++) {
+                    totalBearing += locations[i].bearingTo(locations[i + 1]);
                 }
-                float averageBearing = totalBearing / locationQueue.size();
+                float averageBearing = totalBearing / (locationQueue.size() - 1);
 
-                // Calculate the bearing from the start location to the end of the step
-                float bearingFromStart = firstLocation.bearingTo(stependlocation);
+                // Calculate the bearing from the start location to the stependlocation
+                float bearingFromStart = locations[0].bearingTo(stependlocation);
 
                 // Check if the average bearing is within a range of 60 degrees from the bearing from start
                 if (Math.abs(averageBearing - bearingFromStart) <= 60) {
-                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
-                    Toast.makeText(DirectionForegroundService.this, "Go straight", Toast.LENGTH_SHORT).show();
+                    // The user is moving in the right direction, send a message to keep going straight
+                    if (mBluetoothLeService != null) {
+                        mBluetoothLeService.queueMessage("STR");
+                        Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+
+                    } else {
+                        // Handle the situation when mBluetoothLeService is null
+                        Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending message STR");
+                        Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
-                    Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage to turn");
-                    Toast.makeText(DirectionForegroundService.this, "Turn", Toast.LENGTH_SHORT).show();
+                    // The user is not moving in the right direction, send a message to turn
+                    if (mBluetoothLeService != null) {
+                        mBluetoothLeService.queueMessage("TURN");
+                        Toast.makeText(DirectionForegroundService.this, "TURN", Toast.LENGTH_SHORT).show();
+
+                    } else {
+                        // Handle the situation when mBluetoothLeService is null
+                        Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending message TURN");
+                        Toast.makeText(DirectionForegroundService.this, "TURN", Toast.LENGTH_SHORT).show();
+                    }
                 }
+
+                // Now you can use averageBearing for your logic
+                // For example, you can print it to the log:
+                Log.d("AverageBearing", "Average Bearing: " + averageBearing);
+//                Toast.makeText(DirectionForegroundService.this, "Average Bearing: " + averageBearing, Toast.LENGTH_SHORT).show();
+                locationQueue.clear(); // Clear the queue
+//                locationQueue.poll(); // Remove the first location from the queue
             }
-
-
-
-//
-//            if (distanceMoved > movementThreshold) {
-//                // The user has moved a significant distance, add the new location to the queue
-//                locationQueue.add(nLocation);
-//
-//                // If the queue size exceeds 5, remove the oldest location update
-////                if (locationQueue.size() > 5) {
-////                    locationQueue.poll();
-////                }
-//            }
-//
-//            // Calculate the average bearing from these locations
-//            float totalBearing = 0;
-//            for (Location location : locationQueue) {
-//                totalBearing += location.getBearing();
-//            }
-//            float averageBearing = totalBearing / locationQueue.size();
-//
-//            // Calculate the bearing from the start location to the end of the step
-//            float bearingFromStart = firstLocation.bearingTo(stependlocation);
-//
-//            // Check if the average bearing is within a range of 60 degrees from the bearing from start
-//            if (Math.abs(averageBearing - bearingFromStart) <= 60) {
-//                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage go straight");
-//                Toast.makeText(DirectionForegroundService.this, "Go straight", Toast.LENGTH_SHORT).show();
-//            } else {
-//                Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending messsage to turn");
-//                Toast.makeText(DirectionForegroundService.this, "Turn", Toast.LENGTH_SHORT).show();
-//            }
-
 
             if (isStepFulfilled()) {
                 locationQueue.clear();

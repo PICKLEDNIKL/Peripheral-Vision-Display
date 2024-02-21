@@ -23,12 +23,8 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.core.app.ActivityCompat;
-
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -43,7 +39,7 @@ public class BluetoothActivity extends Activity {
 
     Button refreshButton;
     private Handler handler = new Handler();
-    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // Standard SerialPortService ID
+//    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // Standard SerialPortService ID
 
     private BluetoothLeService bluetoothLeService;
     BottomNavigationView bottomNavigationView;
@@ -81,20 +77,6 @@ public class BluetoothActivity extends Activity {
             bound = false;
         }
     };
-
-//    private final BroadcastReceiver deviceDiscoveryReceiver = new BroadcastReceiver() {
-//        public void onReceive(Context context, Intent intent) {
-//            String action = intent.getAction();
-//            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-//                // Discovery has found a device. Get the BluetoothDevice
-//                // object and its info from the Intent.
-//                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//                String deviceName = device.getName();
-//                String deviceHardwareAddress = device.getAddress(); // MAC address
-//                mArrayAdapter.add(deviceName + "\n" + deviceHardwareAddress);
-//            }
-//        }
-//    };
 
     private final BroadcastReceiver deviceDiscoveryReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
@@ -202,17 +184,6 @@ public class BluetoothActivity extends Activity {
             }
         }
 
-//        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-////            @Override
-////            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-////                String info = ((TextView) view).getText().toString();
-////                String address = info.substring(info.length() - 17);
-////                if (bound) {
-////                    bluetoothLeService.connect(address);
-////                }
-////            }
-////        });
-
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -240,17 +211,6 @@ public class BluetoothActivity extends Activity {
 
         // Start discovery
         startDiscovery();
-
-        // Refresh the list every 5 seconds
-//        handler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                mDeviceSet.clear();
-//                mArrayAdapter.clear();
-//                startDiscovery();
-//                handler.postDelayed(this, 5000);
-//            }
-//        }, 5000);
     }
 
     @Override
@@ -266,7 +226,7 @@ public class BluetoothActivity extends Activity {
         }
     }
 }
-
+    
     private void startDiscovery() {
         if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();

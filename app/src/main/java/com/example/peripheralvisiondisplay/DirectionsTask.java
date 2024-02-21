@@ -3,6 +3,7 @@ package com.example.peripheralvisiondisplay;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -36,6 +37,7 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
     private List<Integer> stepsDistanceList = new ArrayList<>();
     private int currentStepIndex = 0;
     private LatLng currentStepEndLocation;
+    private List<String> polylineList = new ArrayList<>();
 
     DirectionsTask(GoogleMap mMap, Context context) {
         this.mMap = mMap;
@@ -96,7 +98,7 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                     JSONArray steps = leg.getJSONArray("steps");
 
                     // Clear mMap of markers and polylines
-                    mMap.clear();
+//                    mMap.clear();
                     stepsList.clear();
                     stepsEndLocationList.clear();
                     stepsDistanceList.clear();
@@ -130,10 +132,11 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                         Integer distanceval = distance.getInt("value");
                         stepsDistanceList.add(distanceval);
 
-
                         // Get the polyline for each step
                         JSONObject polylineObject = step.getJSONObject("polyline");
                         String polyline = polylineObject.getString("points");
+
+                        polylineList.add(polyline);
 
                         // Decode the polyline into LatLng points and draw it on the map
                         List<LatLng> decodedPolyline = PolyUtil.decode(polyline);
@@ -143,6 +146,17 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                         mMap.addPolyline(polylineOptions);
                     }
                 }
+
+                // Convert the polyline list to a single string
+                String polylineData = String.join(";", polylineList);
+                String markerData = String.join(";", stepsEndLocationList.toString());
+
+                // Store the polyline data in SharedPreferences
+                SharedPreferences sharedPref = mContext.getSharedPreferences("PolylineData", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString("polyline", polylineData);
+                editor.putString("marker", markerData);
+                editor.apply();
 
                 // Send all steps data to DirectionForegroundService
                 Intent intent = new Intent("StepsData");

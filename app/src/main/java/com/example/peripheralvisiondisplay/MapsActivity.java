@@ -45,6 +45,7 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationResult;
 import com.example.peripheralvisiondisplay.databinding.ActivityMapsBinding;
 
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.model.PlaceLikelihood;
@@ -53,9 +54,13 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.maps.android.PolyUtil;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener {
@@ -223,6 +228,45 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // Disable the map until the permission is granted
             mMap.getUiSettings().setAllGesturesEnabled(false);
         }
+
+        // Retrieve the polyline data from SharedPreferences
+        SharedPreferences sharedPref = getSharedPreferences("PolylineData", Context.MODE_PRIVATE);
+        String polyline = sharedPref.getString("polyline", "");
+        String marker = sharedPref.getString("marker", "");
+
+        int stepcount = 0;
+        // Check if there is marker data
+        if (!marker.isEmpty()) {
+            marker = marker.replace("[", "").replace("]", "");
+            String[] markerArray = marker.split(", ");
+
+            for (String markerString : markerArray) {
+                stepcount++;
+                // Remove "lat/lng: (" and ")" from the markerString
+                markerString = markerString.replace("lat/lng: (", "").replace(")", "");
+
+                // Split the markerString into latitude and longitude
+                String[] latLng = markerString.split(",");
+                double lat = Double.parseDouble(latLng[0]);
+                double lng = Double.parseDouble(latLng[1]);
+                LatLng markerLocation = new LatLng(lat, lng);
+                mMap.addMarker(new MarkerOptions().position(markerLocation).title("Step " + (stepcount) + " End"));
+            }
+        }
+
+        // Check if there is polyline data
+        if (!polyline.isEmpty()) {
+
+            String[] polylineArray = polyline.split(";");
+
+            // Iterate over the array and decode each polyline into LatLng points and draw it on the map
+            for (String polylineString : polylineArray) {
+                List<LatLng> decodedPolyline = PolyUtil.decode(polylineString);
+                PolylineOptions polylineOptions = new PolylineOptions();
+                polylineOptions.addAll(decodedPolyline);
+                mMap.addPolyline(polylineOptions);
+            }
+        }
     }
 
     @Override
@@ -345,7 +389,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
 
-//        String destination = destinationEditText.getText().toString();
+        // Clear the map before drawing a new path
+        mMap.clear();
 
         // Construct the URL for the Google Maps Directions API
 //        Log.i("eas", "searchForDestination: API_KEY = " + apikey);
