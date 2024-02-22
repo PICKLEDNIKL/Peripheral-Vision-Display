@@ -72,7 +72,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int REQUEST_LOCATION_PERMISSION = 1001;
 
     Button searchButton;
-    Button calibrationButton;
+    Button clearButton;
 
     double currentLatitude;
     double currentLongitude;
@@ -126,6 +126,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        destinationEditText = findViewById(R.id.destinationEditText);
         searchButton = findViewById(R.id.searchButton);
         searchButton.setOnClickListener(view -> searchForDestination());
+
+        clearButton = findViewById(R.id.clearButton);
+        clearButton.setOnClickListener(view -> {
+            if (mMap != null) {
+                mMap.clear();
+                selectedPlace = null;
+                autocompleteFragment.setText("");
+            }
+        });
 
 //        calibrationButton = findViewById(R.id.switchToCalibrationButton);
 //        calibrationButton.setOnClickListener(view -> switchToCalibrationActivity());

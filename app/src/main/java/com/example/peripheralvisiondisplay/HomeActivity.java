@@ -37,18 +37,12 @@ import androidx.core.app.ActivityCompat;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class HomeActivity extends AppCompatActivity {
-//TODO: MAKE IT SO THAT WHEN I LOOK FOR THE DEVICE, I DO IT BY NAME AND BY MAC ADDRESS. HOPEFULLY TX ON CIRCUIT PYTHON IS CORRECT?
-    // TODO: MIGHT NEED TO ADD ANOTHER LAYOUT FOR BLUETOOTH CONNECTION WHICH WILL INCLUDE SEARCHING FOR THE DEVICE AND THEN CONNECTING TO IT. BUTTONS ARE NEEDED AS THE WAY I AM DOING IT NOW DOESNT ACCOUNT FOR THE DEVICE ALREADY HAVING BLUETOOTH ON AND SO DOESNT SCAN FOR DEVICES UNTIL TURNED OFF AND BACK ON.
-    private static final int REQUEST_BLUETOOTH_SCAN_PERMISSION = 1;
     Button notificationServiceButton;
     Button locationServiceButton;
     BottomNavigationView bottomNavigationView;
-    //    TextView statusText;
-    private static final int REQUEST_LOCATION_PERMISSION = 1001;
-    int locationPermissionCount = 0;
     boolean toggleNotificationService = false;
     boolean toggleLocationService = false;
-    private static final int REQUEST_ENABLE_BT = 1;
+
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
 
@@ -56,8 +50,9 @@ public class HomeActivity extends AppCompatActivity {
     private String deviceAddress = "D7:0B:99:6B:B6:D7";
     private boolean bound = false;
 
+    private static final int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_BLUETOOTH_SCAN_PERMISSION = 1;
     private static final String PREFS_NAME = "HomeActivityPrefs";
-//    private static final String PREFS_ONCREATE_EXECUTED = "onCreateExecuted";
     private static final String PREFS_TOGGLE_LOCATION_SERVICE = "toggleLocationService";
 
 

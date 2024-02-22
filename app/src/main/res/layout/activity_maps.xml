@@ -7,32 +7,28 @@
     android:layout_height="match_parent"
     android:background="@color/white">
 
-    <!-- fragment to select destination -->
     <fragment
         android:id="@+id/autocomplete_fragment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"
-        />
+        android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment" />
 
-    <!-- button to confirm destination -->
     <Button
         android:id="@+id/searchButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Confirm Destination"
-        android:layout_centerHorizontal="true"
+        android:layout_alignParentLeft="true"
         android:layout_below="@id/autocomplete_fragment"/>
 
-<!--    <Button-->
-<!--        android:id="@+id/switchToCalibrationButton"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:text="CALIBRATE PHONE"-->
-<!--        android:layout_alignParentRight="true"-->
-<!--        android:layout_below="@id/autocomplete_fragment"/>-->
+    <Button
+        android:id="@+id/clearButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Clear Map"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/autocomplete_fragment"/>
 
-    <!-- fragment to show map -->
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"

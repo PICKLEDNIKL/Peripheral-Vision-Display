@@ -34,7 +34,6 @@ public class BluetoothActivity extends Activity {
     private BluetoothAdapter mBluetoothAdapter;
     private ArrayAdapter<String> mArrayAdapter;
     private Set<BluetoothDevice> mPairedDevices;
-    private BluetoothSocket mSocket;
     private Set<BluetoothDevice> mDeviceSet = new HashSet<>();
 
     Button refreshButton;
