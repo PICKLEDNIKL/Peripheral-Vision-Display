@@ -39,7 +39,6 @@ public class BluetoothActivity extends Activity {
 
     Button refreshButton;
     private Handler handler = new Handler();
-//    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // Standard SerialPortService ID
 
     private BluetoothLeService bluetoothLeService;
     BottomNavigationView bottomNavigationView;
@@ -103,9 +102,6 @@ public class BluetoothActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bluetooth);
 
-//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_CODE);
-//        }
         // Check if the permission is granted
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
             // Permission is granted, start BluetoothActivity
@@ -135,7 +131,6 @@ public class BluetoothActivity extends Activity {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         boolean toggleLocationService = prefs.getBoolean(PREFS_TOGGLE_LOCATION_SERVICE, false);
 
-
         bottomNavigationView = findViewById(R.id.bottom_menu);
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Intent intent;
@@ -145,8 +140,6 @@ public class BluetoothActivity extends Activity {
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.map) {
-//                intent = new Intent(BluetoothActivity.this, MapsActivity.class);
-//                startActivity(intent);
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     if (toggleLocationService) {
                         intent = new Intent(BluetoothActivity.this, MapsActivity.class);
@@ -163,7 +156,6 @@ public class BluetoothActivity extends Activity {
             } else if (itemId == R.id.bluetooth) {
                 intent = new Intent(BluetoothActivity.this, BluetoothActivity.class);
                 startActivity(intent);
-
                 return true;
             } else if (itemId == R.id.settings) {
                 intent = new Intent(BluetoothActivity.this, SettingsActivity.class);

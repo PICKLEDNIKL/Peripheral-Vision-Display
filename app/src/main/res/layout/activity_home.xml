@@ -16,44 +16,28 @@
         android:layout_gravity="center"
         android:textStyle="bold"
         android:textColor="@color/black"
-        android:layout_marginTop="40dp"
-        android:textSize="80px"/>
+        android:layout_marginTop="40sp"
+        android:textSize="30sp"/>
 
-    <!--notification button-->
     <Button
         android:id="@+id/notificationServiceButton"
         android:layout_width="wrap_content"
-        android:layout_height="102dp"
+        android:layout_height="100sp"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="40sp"
         android:layout_below="@id/title"
-        android:text="Start Notification Service"
-        android:textSize="50px" />
+        android:text="Start Notification Service" />
 
-    <!--location button-->
     <Button
         android:id="@+id/locationServiceButton"
         android:layout_width="wrap_content"
-        android:layout_height="102dp"
+        android:layout_height="100sp"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:layout_gravity="center"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="40sp"
         android:text="Start Location Service"
-        android:layout_below="@id/notificationServiceButton"
-        android:textSize="50px" />
-
-<!--    <Button-->
-<!--        android:id="@+id/switchToMapsActivityButton"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="102dp"-->
-<!--        android:layout_centerHorizontal="true"-->
-<!--        android:layout_centerVertical="true"-->
-<!--        android:layout_gravity="center"-->
-<!--        android:layout_marginTop="40dp"-->
-<!--        android:text="Switch To Maps Activity"-->
-<!--        android:layout_below="@id/locationServiceButton"-->
-<!--        android:textSize="50px" />-->
+        android:layout_below="@id/notificationServiceButton" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_menu"
@@ -69,7 +53,5 @@
         app:itemIconTint="@color/black"
         app:menu="@menu/bottom_menu"
         app:labelVisibilityMode="labeled" />
-
-
 
 </RelativeLayout>

@@ -127,8 +127,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         searchButton = findViewById(R.id.searchButton);
         searchButton.setOnClickListener(view -> searchForDestination());
 
-        calibrationButton = findViewById(R.id.switchToCalibrationButton);
-        calibrationButton.setOnClickListener(view -> switchToCalibrationActivity());
+//        calibrationButton = findViewById(R.id.switchToCalibrationButton);
+//        calibrationButton.setOnClickListener(view -> switchToCalibrationActivity());
 
         bottomNavigationView = findViewById(R.id.bottom_menu);
         bottomNavigationView.setOnItemSelectedListener(item -> {
@@ -411,15 +411,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void switchToCalibrationActivity()
-    {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            Intent intent = new Intent(this, CalibrationActivity.class);
-            startActivity(intent);
-        }
-        else
-        {
-            Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
-        }
-    }
+//    private void switchToCalibrationActivity()
+//    {
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+//            Intent intent = new Intent(this, CalibrationActivity.class);
+//            startActivity(intent);
+//        }
+//        else
+//        {
+//            Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
+//        }
+//    }
 }
