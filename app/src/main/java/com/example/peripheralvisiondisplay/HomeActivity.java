@@ -55,9 +55,6 @@ public class HomeActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "HomeActivityPrefs";
     private static final String PREFS_TOGGLE_LOCATION_SERVICE = "toggleLocationService";
 
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -162,33 +159,6 @@ public class HomeActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_CODE);
         }
 
-
-//        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            startForegroundService(gattServiceIntent);
-//        } else {
-//            startService(gattServiceIntent);
-//        }
-//        bindService(gattServiceIntent, serviceConnection, BIND_AUTO_CREATE);
-
-//        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-//        boolean onCreateExecuted = prefs.getBoolean(PREFS_ONCREATE_EXECUTED, false);
-//
-//        if (!onCreateExecuted) {
-//            // This code will only be executed once
-//            Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                startForegroundService(gattServiceIntent);
-//            } else {
-//                startService(gattServiceIntent);
-//            }
-//            bindService(gattServiceIntent, serviceConnection, BIND_AUTO_CREATE);
-//
-//            // Save the flag in SharedPreferences
-//            SharedPreferences.Editor editor = prefs.edit();
-//            editor.putBoolean(PREFS_ONCREATE_EXECUTED, true);
-//            editor.apply();
-//        }
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {
@@ -217,8 +187,6 @@ public class HomeActivity extends AppCompatActivity {
                         break;
                     case BluetoothAdapter.STATE_ON:
 //                        Toast.makeText(context, "Bluetooth turned on", Toast.LENGTH_SHORT).show();
-//                        BluetoothScanner bluetoothScanner = new BluetoothScanner(bluetoothAdapter);
-//                        bluetoothScanner.scanLeDevice();
                         break;
                 }
             }
@@ -232,6 +200,7 @@ public class HomeActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             bluetoothService = ((BluetoothLeService.LocalBinder) service).getService();
             if (bluetoothService != null) {
+                //TODO: MAYBE MAKE IT SO IT STARTS THE SERVICE HERE OF SOMETHING TO MAKE IT WORK FIRST TIME.
                 if (!bluetoothService.initialize()) {
                     Log.e("serviceconnected", "Unable to initialize Bluetooth");
                     finish();

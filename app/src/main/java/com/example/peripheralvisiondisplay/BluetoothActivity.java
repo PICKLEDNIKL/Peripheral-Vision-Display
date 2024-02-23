@@ -76,6 +76,7 @@ public class BluetoothActivity extends Activity {
         }
     };
 
+
     private final BroadcastReceiver deviceDiscoveryReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -85,12 +86,10 @@ public class BluetoothActivity extends Activity {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
-                if (deviceName != null) {
+                if (deviceName != null && !mDeviceSet.contains(device)) {
+                    // Add new devices to the end of the list
                     mDeviceSet.add(device);
-                    mArrayAdapter.clear();
-                    for (BluetoothDevice d : mDeviceSet) {
-                        mArrayAdapter.add(d.getName() + "\n" + d.getAddress());
-                    }
+                    mArrayAdapter.add(deviceName + "\n" + deviceHardwareAddress);
                 }
             }
         }

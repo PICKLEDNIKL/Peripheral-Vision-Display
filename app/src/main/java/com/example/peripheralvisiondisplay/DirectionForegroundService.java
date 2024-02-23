@@ -57,6 +57,8 @@ public class DirectionForegroundService extends Service{
     private LatLng firstLatlng;
     private Location firstLocation;
 
+    private int straightcount = 0;
+
 
     private String currentStepString;
 
@@ -69,26 +71,7 @@ public class DirectionForegroundService extends Service{
 
     private BluetoothLeService mBluetoothLeService;
 
-    private static final float BEARING_THRESHOLD = 90; // Adjust this value based on your requirements
-
-    private SensorManager sensorManager;
-    private Sensor accelerometer;
-    private Sensor magnetometer;
-    private Sensor gyroscope;
-    private Sensor stepDetector;
-    private float[] lastAccelerometer = new float[3];
-    private float[] lastMagnetometer = new float[3];
-    private float[] lastgyroscope = new float[3];
-
-    private boolean isAccelerometerSet = false;
-    private boolean isMagnetometerSet = false;
-    private boolean isGyroscopeSet = false;
-
-    private float[] rotationMatrix = new float[9];
-    private float[] orientation = new float[3];
-    private float azimuthInDegrees = 0;
-
-    private static final float ALPHA = 0.20f; // if ALPHA = 1 OR 0, no filter applies.
+    private boolean firststraightqueue = false;
 
     // Create a Queue to store the last 5 location updates
     private Queue<Location> locationQueue = new LinkedList<>();
@@ -141,10 +124,6 @@ public class DirectionForegroundService extends Service{
 
         // Call startForeground with the notification
         startForeground(notificationID, notification);
-
-        // Request location updates
-        // ...
-
         return START_STICKY;
     }
 
@@ -166,7 +145,9 @@ public class DirectionForegroundService extends Service{
     @Override
     public void onDestroy() {
         super.onDestroy();
-        fusedLocationClient.removeLocationUpdates(locationCallback);
+        if (locationCallback != null) {
+            fusedLocationClient.removeLocationUpdates(locationCallback);
+        }
         unregisterReceiver(stepsDataReceiver);
         unbindService(serviceConnection);
     }
@@ -230,38 +211,42 @@ public class DirectionForegroundService extends Service{
 
                 // Check if the average bearing is within a range of 60 degrees from the bearing from start
                 if (Math.abs(averageBearing - bearingFromStart) <= 60) {
+                    straightcount++;
                     // The user is moving in the right direction, send a message to keep going straight
                     if (mBluetoothLeService != null) {
-                        mBluetoothLeService.queueMessage("STR");
-                        Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
-
+                        if (straightcount == 3 || !firststraightqueue){
+                            mBluetoothLeService.queueMessage("STR");
+                            Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+                            straightcount = 0;
+                            firststraightqueue = true;
+                        }
                     } else {
-                        // Handle the situation when mBluetoothLeService is null
-                        Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending message STR");
-                        Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+                        if (straightcount == 3 || !firststraightqueue){
+                            // Handle the situation when mBluetoothLeService is null
+                            Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending message STR");
+                            Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+                            straightcount = 0;
+                            firststraightqueue = true;
+                        }
                     }
                 } else {
+                    straightcount = 2;
                     // The user is not moving in the right direction, send a message to turn
                     if (mBluetoothLeService != null) {
                         mBluetoothLeService.queueMessage("TURN");
                         Toast.makeText(DirectionForegroundService.this, "TURN", Toast.LENGTH_SHORT).show();
-
                     } else {
                         // Handle the situation when mBluetoothLeService is null
                         Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending message TURN");
                         Toast.makeText(DirectionForegroundService.this, "TURN", Toast.LENGTH_SHORT).show();
                     }
                 }
-
-                // Now you can use averageBearing for your logic
-                // For example, you can print it to the log:
-                Log.d("AverageBearing", "Average Bearing: " + averageBearing);
-//                Toast.makeText(DirectionForegroundService.this, "Average Bearing: " + averageBearing, Toast.LENGTH_SHORT).show();
-                locationQueue.clear(); // Clear the queue
-//                locationQueue.poll(); // Remove the first location from the queue
+                locationQueue.clear();
             }
 
             if (isStepFulfilled()) {
+                straightcount = 0;
+                firststraightqueue = false;
                 locationQueue.clear();
 
                 // Handle condition when the user has completed their journey and there are no step information left.
@@ -276,22 +261,22 @@ public class DirectionForegroundService extends Service{
                 createNotification("Step "+ currentStepIndex + " : " + currentStepString);
             }
 
-            if (isUserOffPath()) {
-
-                //TODO: NEED TO ADD THIS BACK AND MAKE IT WORK ASWELL
-//                String url = "https://maps.googleapis.com/maps/api/directions/json" +
-//                        "?destination=" + MapsActivity.selectedPlace.latitude + "," + MapsActivity.selectedPlace.longitude +
-//                        "&mode=walking" +
-//                        "&origin=" + currentLatitude + "," + currentLongitude +
-//                        "&key=" + apikey;
+//            if (isUserOffPath()) {
 //
-//                Intent newdirectionintent = new Intent("RecalcPath");
-//                newdirectionintent.putExtra("url", url);
-//                sendBroadcast(newdirectionintent);
-
-                // Execute the AsyncTask to perform the API request
-//                new DirectionsTask(DirectionForegroundService.this).execute(url);
-            }
+//                //TODO: NEED TO ADD THIS BACK AND MAKE IT WORK ASWELL
+////                String url = "https://maps.googleapis.com/maps/api/directions/json" +
+////                        "?destination=" + MapsActivity.selectedPlace.latitude + "," + MapsActivity.selectedPlace.longitude +
+////                        "&mode=walking" +
+////                        "&origin=" + currentLatitude + "," + currentLongitude +
+////                        "&key=" + apikey;
+////
+////                Intent newdirectionintent = new Intent("RecalcPath");
+////                newdirectionintent.putExtra("url", url);
+////                sendBroadcast(newdirectionintent);
+//
+//                // Execute the AsyncTask to perform the API request
+////                new DirectionsTask(DirectionForegroundService.this).execute(url);
+//            }
         }
     };
 

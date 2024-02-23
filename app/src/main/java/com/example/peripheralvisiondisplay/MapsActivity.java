@@ -128,13 +128,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         searchButton.setOnClickListener(view -> searchForDestination());
 
         clearButton = findViewById(R.id.clearButton);
-        clearButton.setOnClickListener(view -> {
-            if (mMap != null) {
-                mMap.clear();
-                selectedPlace = null;
-                autocompleteFragment.setText("");
-            }
-        });
+        clearButton.setOnClickListener(view -> clearMap());
 
 //        calibrationButton = findViewById(R.id.switchToCalibrationButton);
 //        calibrationButton.setOnClickListener(view -> switchToCalibrationActivity());
@@ -417,6 +411,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             startForegroundService(dfserviceintent);
         } else {
             startService(dfserviceintent);
+        }
+    }
+
+    public void clearMap(){
+        if (mMap != null) {
+            Intent dfserviceintent = new Intent(this, DirectionForegroundService.class);
+            stopService(dfserviceintent);
+            mMap.clear();
+            selectedPlace = null;
+            autocompleteFragment.setText("");
+
+            // Clear the polyline and marker data from SharedPreferences
+            SharedPreferences sharedPref = getSharedPreferences("PolylineData", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.remove("polyline");
+            editor.remove("marker");
+            editor.apply();
         }
     }
 
