@@ -278,7 +278,7 @@ public class SettingsActivity extends AppCompatActivity {
 
             // Send the preferences to the Bluetooth device
             SharedPreferences ledsharedPref = getSharedPreferences("LedPreferences", Context.MODE_PRIVATE);
-            bluetoothLeService.sendSettingPref(ledsharedPref);
+//            bluetoothLeService.sendSettingPref(ledsharedPref);
         }
 
         @Override

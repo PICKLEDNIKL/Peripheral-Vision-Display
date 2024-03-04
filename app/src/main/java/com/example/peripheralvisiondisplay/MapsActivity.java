@@ -14,6 +14,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -57,13 +58,15 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.maps.android.PolyUtil;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private ActivityMapsBinding binding;
@@ -102,7 +105,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final float ALPHA = 0.20f; // if ALPHA = 1 OR 0, no filter applies.
 
+    // Create a Queue to store the last 4 location updates
+    private Queue<Location> locationQueue = new LinkedList<>();
+
+    // Declare a Handler and Runnable
+    private Handler handler = new Handler();
+    private Runnable runnable;
+    private boolean isRunnableRunning = false;
+
     BottomNavigationView bottomNavigationView;
+
+    private int stepcount = 0;
 
 
     @Override
@@ -201,9 +214,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
         IntentFilter filter = new IntentFilter("RecalculatePath");
-        registerReceiver(recalculatePathReceiver, filter);
-
-
+//        registerReceiver(recalculatePathReceiver, filter);
     }
 
     @Override
@@ -243,18 +254,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             marker = marker.replace("[", "").replace("]", "");
             String[] markerArray = marker.split(", ");
 
-            for (String markerString : markerArray) {
-                stepcount++;
-                // Remove "lat/lng: (" and ")" from the markerString
-                markerString = markerString.replace("lat/lng: (", "").replace(")", "");
+//            for (String markerString : markerArray) {
+//                stepcount++;
+            // Remove "lat/lng: (" and ")" from the markerString
+            String markerString = markerArray[markerArray.length - 1];
+            markerString = markerString.replace("lat/lng: (", "").replace(")", "");
 
-                // Split the markerString into latitude and longitude
-                String[] latLng = markerString.split(",");
-                double lat = Double.parseDouble(latLng[0]);
-                double lng = Double.parseDouble(latLng[1]);
-                LatLng markerLocation = new LatLng(lat, lng);
-                mMap.addMarker(new MarkerOptions().position(markerLocation).title("Step " + (stepcount) + " End"));
-            }
+            // Split the markerString into latitude and longitude
+            String[] latLng = markerString.split(",");
+            double lat = Double.parseDouble(latLng[0]);
+            double lng = Double.parseDouble(latLng[1]);
+            LatLng markerLocation = new LatLng(lat, lng);
+            //TODO: maybe add this back in later
+
+
+//            }
+            mMap.addMarker(new MarkerOptions().position(markerLocation).title("Destination"));
         }
 
         // Check if there is polyline data
@@ -275,8 +290,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+//        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+//        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 
         registerReceiver(locationUpdateReceiver, new IntentFilter("LocationUpdates"));
     }
@@ -285,7 +300,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onPause() {
         super.onPause();
 //        fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-        sensorManager.unregisterListener(this);
+//        sensorManager.unregisterListener(this);
 
         unregisterReceiver(locationUpdateReceiver);
     }
@@ -296,50 +311,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onDestroy();
 
         // Unregister the BroadcastReceiver
-        unregisterReceiver(recalculatePathReceiver);
-    }
-
-    private float[] lowPassFilter( float input[], float output[] ) {
-        if ( output == null ) return input;
-
-        for ( int i=0; i<input.length; i++ ) {
-            output[i] = output[i] + ALPHA * (input[i] - output[i]);
-        }
-        return output;
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor == accelerometer) {
-            lastAccelerometer = lowPassFilter(event.values.clone(), lastAccelerometer);
-            isAccelerometerSet = true;
-        } else if (event.sensor == magnetometer) {
-            lastMagnetometer = lowPassFilter(event.values.clone(), lastMagnetometer);
-            isMagnetometerSet = true;
-        }
-
-        if (isAccelerometerSet && isMagnetometerSet) {
-            SensorManager.getRotationMatrix(rotationMatrix, null, lastAccelerometer, lastMagnetometer);
-            SensorManager.getOrientation(rotationMatrix, orientation);
-            float azimuthInRadians = orientation[0];
-            float azimuthInDegrees = (float)(Math.toDegrees(azimuthInRadians)+360)%360;
-
-                                                                                                //add this back in if you want the map to rotate
-//            // Update the camera position to match the device's orientation
-//            if (mMap != null) {
-//                CameraPosition cameraPosition = new CameraPosition.Builder()
-//                        .target(mMap.getCameraPosition().target) // keep the current target
-//                        .zoom(mMap.getCameraPosition().zoom) // keep the current zoom
-//                        .bearing(azimuthInDegrees) // update the bearing to match the device's orientation
-//                        .build();
-//                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-//            }
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Handle changes in sensor accuracy
+//        unregisterReceiver(recalculatePathReceiver);
     }
 
     //TODO: NEED TO ADD THIS AFTER REMOVING THE CURRENT IMPLEMENTATION
@@ -364,25 +336,61 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             LatLng northeast = new LatLng(currentLatitude + biasDistance, currentLongitude + biasDistance);
             RectangularBounds bounds = RectangularBounds.newInstance(southwest, northeast);
             autocompleteFragment.setLocationBias(bounds);
-            Log.i("bounds", "onCreate: " + bounds.toString());
 
-            Log.i("TAG", "onLocationResult: " + currentLatitude + " " + currentLongitude);
-        }
-    };
 
-    private BroadcastReceiver recalculatePathReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if ("RecalculatePath".equals(intent.getAction())) {
-                // Get the URL from the Intent
-                String url = intent.getStringExtra("url");
-                Log.i("recalculate", "onReceive: " + url);
-                Toast.makeText(context, "Recalculating path", Toast.LENGTH_SHORT).show();
-                // Execute DirectionsTask with this URL
-                new DirectionsTask(mMap, MapsActivity.this).execute(url);
+            float movementThreshold = 5; // Set this to a value that makes sense for your application // this was set to 10 before
+
+            Location currentLocation = new Location("");
+            currentLocation.setLatitude(currentLatitude);
+            currentLocation.setLongitude(currentLongitude);
+
+            // Check if the locationQueue is empty
+            if (locationQueue.isEmpty()) {
+                // This is the user's first location, add it to the queue
+                locationQueue.add(currentLocation);
+            } else {
+                // Calculate the distance between the new location and the last location in the queue
+                Location lastLocation = locationQueue.peek();
+                float distanceMoved = lastLocation.distanceTo(currentLocation);
+
+                // If the distance is greater than the movementThreshold, add the new location to the queue
+                if (distanceMoved > movementThreshold) {
+                    locationQueue.add(currentLocation);
+                    // Start a delayed task if it's not already running
+                    if (!isRunnableRunning) {
+                        isRunnableRunning = true;
+                        runnable = new Runnable() {
+                            @Override
+                            public void run() {
+                                stepcount++;
+                                // Check if the counter is an even number
+                                if (stepcount % 2 == 0) {
+                                    mMap.addMarker(new MarkerOptions().position(currentLatLng).title("User Location " + (locationQueue.size())));
+                                }
+
+                                isRunnableRunning = false;
+                            }
+                        };
+                        handler.postDelayed(runnable, 5000); // Delay of 5 seconds
+                    }
+                }
             }
         }
     };
+
+//    private BroadcastReceiver recalculatePathReceiver = new BroadcastReceiver() {
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            if ("RecalculatePath".equals(intent.getAction())) {
+//                // Get the URL from the Intent
+//                String url = intent.getStringExtra("url");
+//                Log.i("recalculate", "onReceive: " + url);
+//                Toast.makeText(context, "Recalculating path", Toast.LENGTH_SHORT).show();
+//                // Execute DirectionsTask with this URL
+//                new DirectionsTask(mMap, MapsActivity.this).execute(url);
+//            }
+//        }
+//    };
 
 
 
@@ -412,6 +420,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } else {
             startService(dfserviceintent);
         }
+        Toast.makeText(this, "Destination has been confirmed", Toast.LENGTH_SHORT).show();
     }
 
     public void clearMap(){
@@ -430,16 +439,4 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             editor.apply();
         }
     }
-
-//    private void switchToCalibrationActivity()
-//    {
-//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-//            Intent intent = new Intent(this, CalibrationActivity.class);
-//            startActivity(intent);
-//        }
-//        else
-//        {
-//            Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
-//        }
-//    }
 }

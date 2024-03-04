@@ -115,7 +115,7 @@ public class LocationForegroundService extends Service {
                     }
                     for (Location location : locationResult.getLocations()) {
                         String locationText = "Lat: " + location.getLatitude() + ", Lng: " + location.getLongitude();
-                        updateNotification(locationText);
+//                        updateNotification(locationText);
 
                         // Create an Intent to broadcast the location
                         Intent intent = new Intent("LocationUpdates");
@@ -186,21 +186,15 @@ public class LocationForegroundService extends Service {
 //        startForeground(notificationID, notification);
 //    }
 
-    private void updateNotification(String content) {
-        Notification notification = new NotificationCompat.Builder(this, channelID)
-                .setContentTitle("Location Foreground Service")
-                .setContentText(content)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setOngoing(true)
-                .build();
-
-        startForeground(notificationID, notification);
-
-//        Notification notification = notificationBuilder.build();
-//        NotificationManager manager = getSystemService(NotificationManager.class);
-//        if (manager != null) {
-//            manager.notify(notificationID, notification);
-//        }
-    }
+//    private void updateNotification(String content) {
+//        Notification notification = new NotificationCompat.Builder(this, channelID)
+//                .setContentTitle("Location Foreground Service")
+//                .setContentText(content)
+//                .setSmallIcon(R.drawable.ic_launcher_foreground)
+//                .setPriority(NotificationCompat.PRIORITY_HIGH)
+//                .setOngoing(true)
+//                .build();
+//
+//        startForeground(notificationID, notification);
+//    }
 }

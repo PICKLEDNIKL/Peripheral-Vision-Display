@@ -133,10 +133,12 @@ public class BluetoothLeService extends Service {
                 queueMessage("LEFT");
             } else if (direction.toLowerCase().contains("right")){
                 queueMessage("RIGHT");
-            } else if (direction.toLowerCase().contains("straight")){
+            } else if (direction.toLowerCase().contains("straight")) {
                 queueMessage("STR");
-            } else{
+            } else if (direction.toLowerCase().contains("head")) {
                 queueMessage("NOTIF");
+            } else{
+                queueMessage("DEST");
             }
         }
     }
@@ -358,54 +360,6 @@ public class BluetoothLeService extends Service {
         }
         return true;
     }
-
-//    public boolean connect(final String address) {
-//        if (bluetoothAdapter == null) {
-//            Log.w(TAG, "BluetoothAdapter not initialized");
-//            return false;
-//        }
-//        if (address == null) {
-//            Log.w(TAG, "unspecified address.");
-//            return false;
-//        }
-//
-//        // previously connected device.  Try to reconnect.
-//        if (bluetoothDeviceAddress != null && address.equals(bluetoothDeviceAddress)
-//                && bluetoothGatt != null) {
-//            Log.d(TAG, "Trying to use an existing bluetoothGatt for connection.");
-//            if (bluetoothGatt.connect()) {
-//                connectionState = STATE_CONNECTED;
-//                return true;
-//            } else {
-//                return false;
-//            }
-//        }
-//
-////        try {
-////            final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
-////            // connect to the GATT server on the device
-////            bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
-////            return true;
-////        } catch (IllegalArgumentException exception) {
-////            Log.w(TAG, "Device not found with provided address.  Unable to connect.");
-////            return false;
-//
-//
-//        final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
-//        if (device == null) {
-//            Log.w(TAG, "Device not found. Unable to connect.");
-//            return false;
-//        }
-//
-//        // We want to directly connect to the device, so we are setting the autoConnect
-//        // parameter to false.
-//        bluetoothGatt = device.connectGatt(this, false, bluetoothGattCallback);
-//        Log.d(TAG, "Trying to create a new connection.");
-//        bluetoothDeviceAddress = address;
-//        connectionState = STATE_CONNECTING;
-//        return true;
-//    }
-
 
     public boolean connect(final String address) {
         if (bluetoothAdapter == null || address == null) {

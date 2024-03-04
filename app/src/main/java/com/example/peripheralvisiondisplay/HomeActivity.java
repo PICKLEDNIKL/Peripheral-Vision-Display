@@ -46,8 +46,7 @@ public class HomeActivity extends AppCompatActivity {
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
 
-    private BluetoothLeService bluetoothService;
-    private String deviceAddress = "D7:0B:99:6B:B6:D7";
+    private BluetoothLeService bluetoothLeService;
     private boolean bound = false;
 
     private static final int REQUEST_ENABLE_BT = 1;
@@ -145,19 +144,23 @@ public class HomeActivity extends AppCompatActivity {
             getSupportActionBar().hide();
         }
 
-        if (!isServiceRunning(BluetoothLeService.class)) {
-            Intent serviceIntent = new Intent(this, BluetoothLeService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent);
-                Log.d("homeactivity", "onCreate: startforegroundservice for ble");
-            } else {
-                startService(serviceIntent);
-            }
-        }
+//        if (!isServiceRunning(BluetoothLeService.class)) {
+//            Intent serviceIntent = new Intent(this, BluetoothLeService.class);
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                startForegroundService(serviceIntent);
+//                Log.d("homeactivity", "onCreate: startforegroundservice for ble");
+//            } else {
+//                startService(serviceIntent);
+//            }
+//        }
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_CODE);
         }
+
+        // Bind to the service
+        Intent intent = new Intent(this, BluetoothLeService.class);
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
 
     }
 
@@ -193,71 +196,88 @@ public class HomeActivity extends AppCompatActivity {
         }
     };
 
+//    // Code to manage Service lifecycle.
+//    private ServiceConnection serviceConnection = new ServiceConnection() {
+//
+//        @Override
+//        public void onServiceConnected(ComponentName componentName, IBinder service) {
+//            bluetoothService = ((BluetoothLeService.LocalBinder) service).getService();
+//            if (bluetoothService != null) {
+//                //TODO: MAYBE MAKE IT SO IT STARTS THE SERVICE HERE OF SOMETHING TO MAKE IT WORK FIRST TIME.
+//                if (!bluetoothService.initialize()) {
+//                    Log.e("serviceconnected", "Unable to initialize Bluetooth");
+//                    finish();
+//                }
+//                bound = true;
+////                bluetoothService.connect(deviceAddress);
+//                Log.e("serviceconnected", "conencted to bluetooth service");
+//            }
+//        }
+//
+//        @Override
+//        public void onServiceDisconnected(ComponentName componentName) {
+//            bluetoothService = null;
+//            // TODO: 07/01/2024 check if bounds are necessary and remove from here and from destroy if not.
+//            bound = false;
+//        }
+//    };
+
     // Code to manage Service lifecycle.
-    private ServiceConnection serviceConnection = new ServiceConnection() {
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
-            bluetoothService = ((BluetoothLeService.LocalBinder) service).getService();
-            if (bluetoothService != null) {
-                //TODO: MAYBE MAKE IT SO IT STARTS THE SERVICE HERE OF SOMETHING TO MAKE IT WORK FIRST TIME.
-                if (!bluetoothService.initialize()) {
-                    Log.e("serviceconnected", "Unable to initialize Bluetooth");
-                    finish();
-                }
-                bound = true;
-//                bluetoothService.connect(deviceAddress);
-                Log.e("serviceconnected", "conencted to bluetooth service");
-            }
+            BluetoothLeService.LocalBinder binder = (BluetoothLeService.LocalBinder) service;
+            bluetoothLeService = binder.getService();
+            bound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            bluetoothService = null;
-            // TODO: 07/01/2024 check if bounds are necessary and remove from here and from destroy if not.
+            bluetoothLeService = null;
             bound = false;
         }
     };
 
-    // LISTEN FOR UPDATES IN ACTIVITY
-    private final BroadcastReceiver gattUpdateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-                // Update your UI here to reflect that the device is connected
-                Toast.makeText(context, "device is connected", Toast.LENGTH_SHORT).show();
+//    // LISTEN FOR UPDATES IN ACTIVITY
+//    private final BroadcastReceiver gattUpdateReceiver = new BroadcastReceiver() {
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            final String action = intent.getAction();
+//            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
+//                // Update your UI here to reflect that the device is connected
+//                Toast.makeText(context, "device is connected", Toast.LENGTH_SHORT).show();
+//
+//            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
+//                // Update your UI here to reflect that the device is disconnected
+//                Toast.makeText(context, "device is disconnected", Toast.LENGTH_SHORT).show();
+//
+//            }
+//        }
+//    };
 
-            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
-                // Update your UI here to reflect that the device is disconnected
-                Toast.makeText(context, "device is disconnected", Toast.LENGTH_SHORT).show();
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        registerReceiver(gattUpdateReceiver, makeGattUpdateIntentFilter());
+//        if (bluetoothService != null) {
+//            final boolean result = bluetoothService.connect(deviceAddress);
+//            Log.d("HomeActivity", "Connect request result=" + result);
+//        }
+//    }
+//
+//    @Override
+//    protected void onPause() {
+//        super.onPause();
+//        unregisterReceiver(gattUpdateReceiver);
+//    }
 
-            }
-        }
-    };
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        registerReceiver(gattUpdateReceiver, makeGattUpdateIntentFilter());
-        if (bluetoothService != null) {
-            final boolean result = bluetoothService.connect(deviceAddress);
-            Log.d("HomeActivity", "Connect request result=" + result);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(gattUpdateReceiver);
-    }
-
-    private static IntentFilter makeGattUpdateIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-        return intentFilter;
-    }
+//    private static IntentFilter makeGattUpdateIntentFilter() {
+//        final IntentFilter intentFilter = new IntentFilter();
+//        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
+//        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
+//        return intentFilter;
+//    }
 
     private void toggleNotificationService()
     {
@@ -418,9 +438,11 @@ public class HomeActivity extends AppCompatActivity {
 
         unregisterReceiver(bluetoothStateReceiver);
 
-        if (bound) {
-            unbindService(serviceConnection);
-            bound = false;
-        }
+        unbindService(serviceConnection);
+
+//        if (bound) {
+////            unbindService(serviceConnection);
+//            bound = false;
+//        }
     }
 }

@@ -123,7 +123,8 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                         double endLat = endLocation.getDouble("lat");
                         double endLng = endLocation.getDouble("lng");
                         currentStepEndLocation = new LatLng(endLat, endLng);
-                        mMap.addMarker(new MarkerOptions().position(currentStepEndLocation).title("Step " + (j + 1) + " End"));
+                        //TODO: MAYBE ADD THIS BACK LATER
+//                        mMap.addMarker(new MarkerOptions().position(currentStepEndLocation).title("Step " + (j + 1) + " End"));
                         // adds currentstepend to list to send to directionforegroundservice
                         stepsEndLocationList.add(currentStepEndLocation);
 
@@ -145,6 +146,7 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
 
                         mMap.addPolyline(polylineOptions);
                     }
+                    mMap.addMarker(new MarkerOptions().position(currentStepEndLocation).title("Destination"));
                 }
 
                 // Convert the polyline list to a single string

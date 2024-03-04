@@ -2,6 +2,7 @@ package com.example.peripheralvisiondisplay;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -13,9 +14,11 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -77,17 +80,33 @@ public class BluetoothActivity extends Activity {
     };
 
 
+//    private final BroadcastReceiver deviceDiscoveryReceiver = new BroadcastReceiver() {
+//        public void onReceive(Context context, Intent intent) {
+//            String action = intent.getAction();
+//            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+//                // Discovery has found a device. Get the BluetoothDevice
+//                // object and its info from the Intent.
+//                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+//                String deviceName = device.getName();
+//                String deviceHardwareAddress = device.getAddress(); // MAC address
+//                if (deviceName != null && !mDeviceSet.contains(device)) {
+//                    // Add new devices to the end of the list
+//                    mDeviceSet.add(device);
+//                    mArrayAdapter.add(deviceName + "\n" + deviceHardwareAddress);
+//                }
+//            }
+//        }
+//    };
+
     private final BroadcastReceiver deviceDiscoveryReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                // Discovery has found a device. Get the BluetoothDevice
-                // object and its info from the Intent.
+                // When a device is discovered...
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
                 if (deviceName != null && !mDeviceSet.contains(device)) {
-                    // Add new devices to the end of the list
                     mDeviceSet.add(device);
                     mArrayAdapter.add(deviceName + "\n" + deviceHardwareAddress);
                 }
@@ -101,13 +120,13 @@ public class BluetoothActivity extends Activity {
         setContentView(R.layout.activity_bluetooth);
 
         // Check if the permission is granted
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
             // Permission is granted, start BluetoothActivity
             Intent intent = new Intent(this, BluetoothActivity.class);
             startActivity(intent);
         } else {
             // Permission is not granted, request the permission
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN}, REQUEST_CODE);
         }
 
         refreshButton = findViewById(R.id.refreshButton);
@@ -186,8 +205,10 @@ public class BluetoothActivity extends Activity {
             }
         });
 
-        Intent intent = new Intent(this, BluetoothLeService.class);
-        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
+
+//        TODO:CHECK THIS
+//        Intent intent = new Intent(this, BluetoothLeService.class);
+//        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
 
         // Register for broadcasts when a device is discovered.
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -201,6 +222,34 @@ public class BluetoothActivity extends Activity {
 
         // Start discovery
         startDiscovery();
+
+        if (!isServiceRunning(BluetoothLeService.class)) {
+            Intent serviceIntent = new Intent(this, BluetoothLeService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent);
+                Log.d("homeactivity", "onCreate: startforegroundservice for ble");
+            } else {
+                startService(serviceIntent);
+            }
+        }
+    }
+
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Bind to the service
+        Intent intent = new Intent(this, BluetoothLeService.class);
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
     @Override
