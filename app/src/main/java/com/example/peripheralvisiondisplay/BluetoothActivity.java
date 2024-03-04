@@ -14,18 +14,23 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import java.util.HashSet;
@@ -183,7 +188,22 @@ public class BluetoothActivity extends Activity {
         });
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        mArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
+        mArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+
+                String deviceName = getItem(position);
+                if (deviceName != null && deviceName.contains("CIRCUITPY")) {
+                    view.setBackgroundColor(Color.parseColor("#CCFFCC"));
+                } else {
+                    view.setBackgroundColor(getResources().getColor(android.R.color.transparent));
+                }
+
+                return view;
+            }
+        };
         listView.setAdapter(mArrayAdapter);
 
         mPairedDevices = mBluetoothAdapter.getBondedDevices();
@@ -200,7 +220,9 @@ public class BluetoothActivity extends Activity {
                 String address = info.substring(info.length() - 17);
                 if (bound) {
                     bluetoothLeService.connect(address);
+                    BluetoothDevice device = bluetoothLeService.getConnectedDevice();
                     Toast.makeText(BluetoothActivity.this, "Connecting to " + info, Toast.LENGTH_SHORT).show();
+                    connectedDeviceTextView.setText("Connected Device: " + device.getName() + "\n" + device.getAddress());
                 }
             }
         });

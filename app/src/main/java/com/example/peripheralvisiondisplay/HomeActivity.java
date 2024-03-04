@@ -438,11 +438,11 @@ public class HomeActivity extends AppCompatActivity {
 
         unregisterReceiver(bluetoothStateReceiver);
 
-        unbindService(serviceConnection);
+//        unbindService(serviceConnection);
 
-//        if (bound) {
-////            unbindService(serviceConnection);
-//            bound = false;
-//        }
+        if (bound) {
+            unbindService(serviceConnection);
+            bound = false;
+        }
     }
 }
