@@ -210,7 +210,7 @@ public class DirectionForegroundService extends Service{
                 // Calculate the bearing from the start location to the stependlocation
                 float bearingFromStart = locations[0].bearingTo(stependlocation);
 
-                // Check if the average bearing is within a range of 60 degrees from the bearing from start
+                // Check if the avg bearing of the user is less than 90 degrees from the step destination which means the user is walking in the right direction.
                 if (Math.abs(averageBearing - bearingFromStart) <= 90) {
                     straightcount++;
                     // The user is moving in the right direction, send a message to keep going straight
@@ -230,7 +230,8 @@ public class DirectionForegroundService extends Service{
                             firststraightqueue = true;
                         }
                     }
-                } else {
+                // Check if the avg bearing of the user is larger than 270 degrees from the step destination which means the user is walking in the wrong direction.
+                } else if (Math.abs(averageBearing - bearingFromStart) >= 270) {
                     turncount++;
                     if (turncount == 2) {
                         // The user is not moving in the right direction, send a message to turn
