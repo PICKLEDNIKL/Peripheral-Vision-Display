@@ -1,11 +1,11 @@
 package com.example.peripheralvisiondisplay;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -32,10 +32,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 public class BluetoothActivity extends Activity {
     static final int REQUEST_CODE = 1;
@@ -45,7 +46,6 @@ public class BluetoothActivity extends Activity {
     private Set<BluetoothDevice> mDeviceSet = new HashSet<>();
 
     Button refreshButton;
-    private Handler handler = new Handler();
 
     private BluetoothLeService bluetoothLeService;
     BottomNavigationView bottomNavigationView;
@@ -57,16 +57,17 @@ public class BluetoothActivity extends Activity {
     private TextView connectedDeviceTextView;
     private Button disconnectButton;
 
-    // Code to manage Service lifecycle.
+    // Manage service lifecycle.
     private final ServiceConnection serviceConnection = new ServiceConnection() {
 
+        @SuppressLint("MissingPermission")
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             BluetoothLeService.LocalBinder binder = (BluetoothLeService.LocalBinder) service;
             bluetoothLeService = binder.getService();
             bound = true;
 
-            // If a device is connected, update the TextView
+            // If a device is connected, update the TextView.
             if (bound) {
                 BluetoothDevice device = bluetoothLeService.getConnectedDevice();
                 if (device != null) {
@@ -77,6 +78,7 @@ public class BluetoothActivity extends Activity {
             }
         }
 
+        // Handle unexpected disconnection from service.
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             bluetoothLeService = null;
@@ -84,32 +86,13 @@ public class BluetoothActivity extends Activity {
         }
     };
 
-
-//    private final BroadcastReceiver deviceDiscoveryReceiver = new BroadcastReceiver() {
-//        public void onReceive(Context context, Intent intent) {
-//            String action = intent.getAction();
-//            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-//                // Discovery has found a device. Get the BluetoothDevice
-//                // object and its info from the Intent.
-//                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//                String deviceName = device.getName();
-//                String deviceHardwareAddress = device.getAddress(); // MAC address
-//                if (deviceName != null && !mDeviceSet.contains(device)) {
-//                    // Add new devices to the end of the list
-//                    mDeviceSet.add(device);
-//                    mArrayAdapter.add(deviceName + "\n" + deviceHardwareAddress);
-//                }
-//            }
-//        }
-//    };
-
+    // Broadcast receiver for device discovery.
     private final BroadcastReceiver deviceDiscoveryReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                // When a device is discovered...
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                String deviceName = device.getName();
+                @SuppressLint("MissingPermission") String deviceName = device.getName();
                 String deviceHardwareAddress = device.getAddress(); // MAC address
                 if (deviceName != null && !mDeviceSet.contains(device)) {
                     mDeviceSet.add(device);
@@ -140,6 +123,7 @@ public class BluetoothActivity extends Activity {
         connectedDeviceTextView = findViewById(R.id.connected_device);
 
         disconnectButton = findViewById(R.id.disconnect_button);
+        // Disconnect from connected device if user presses disconnect button
         disconnectButton.setOnClickListener(view -> {
             if (bound) {
                 bluetoothLeService.disconnect();
@@ -153,6 +137,7 @@ public class BluetoothActivity extends Activity {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         boolean toggleLocationService = prefs.getBoolean(PREFS_TOGGLE_LOCATION_SERVICE, false);
 
+        // Handle bottom navigation menu
         bottomNavigationView = findViewById(R.id.bottom_menu);
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Intent intent;
@@ -169,9 +154,7 @@ public class BluetoothActivity extends Activity {
                     } else {
                         Toast.makeText(this, "Please start the location service first", Toast.LENGTH_SHORT).show();
                     }
-                }
-                else
-                {
+                } else {
                     Toast.makeText(this, "Please allow location permission to use this feature", Toast.LENGTH_SHORT).show();
                 }
                 return true;
@@ -188,6 +171,8 @@ public class BluetoothActivity extends Activity {
         });
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        // If the device contains the substring "CIRCUITPY", set background colour to light green.
         mArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1) {
             @NonNull
             @Override
@@ -213,7 +198,9 @@ public class BluetoothActivity extends Activity {
             }
         }
 
+        // Connect to the device the user clicks on
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @SuppressLint("MissingPermission")
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String info = ((TextView) view).getText().toString();
@@ -228,10 +215,6 @@ public class BluetoothActivity extends Activity {
         });
 
 
-//        TODO:CHECK THIS
-//        Intent intent = new Intent(this, BluetoothLeService.class);
-//        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
-
         // Register for broadcasts when a device is discovered.
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         registerReceiver(deviceDiscoveryReceiver, filter);
@@ -242,20 +225,21 @@ public class BluetoothActivity extends Activity {
         }
         mBluetoothAdapter.startDiscovery();
 
-        // Start discovery
+        // Start discovery.
         startDiscovery();
 
+        // Start foreground service for Bluetooth connection if not already running.
         if (!isServiceRunning(BluetoothLeService.class)) {
             Intent serviceIntent = new Intent(this, BluetoothLeService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent);
-                Log.d("homeactivity", "onCreate: startforegroundservice for ble");
             } else {
                 startService(serviceIntent);
             }
         }
     }
 
+    // Check if the service is running.
     private boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
@@ -269,26 +253,29 @@ public class BluetoothActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
-        // Bind to the service
+        // Bind to the service.
         Intent intent = new Intent(this, BluetoothLeService.class);
         bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-    if (requestCode == REQUEST_CODE) {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            // Permission granted, start BluetoothActivity
-            Intent intent = new Intent(this, BluetoothActivity.class);
-            startActivity(intent);
-        } else {
-            // Permission denied. Disable the functionality that depends on this permission.
-            Toast.makeText(this, "Permission denied to connect to Bluetooth devices", Toast.LENGTH_SHORT).show();
+        if (requestCode == REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // If permission is granted, start BluetoothActivity
+                Intent intent = new Intent(this, BluetoothActivity.class);
+                startActivity(intent);
+            } else {
+                // Permission denied. Disable the functionality that depends on this permission.
+                Toast.makeText(this, "Permission denied to connect to Bluetooth devices", Toast.LENGTH_SHORT).show();
+            }
         }
     }
-}
-    
+
     private void startDiscovery() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
         if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();
         }
@@ -296,7 +283,10 @@ public class BluetoothActivity extends Activity {
     }
 
     public void refreshBluetoothDevices(View view) {
-        // Cancel the current discovery process if it's running
+        // Cancel the current discovery process if it's already running.
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
         if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();
         }
@@ -307,6 +297,7 @@ public class BluetoothActivity extends Activity {
 
         // Start a new discovery process after a small delay
         new Handler().postDelayed(new Runnable() {
+            @SuppressLint("MissingPermission")
             @Override
             public void run() {
                 mBluetoothAdapter.startDiscovery();
@@ -317,11 +308,11 @@ public class BluetoothActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Unregister the broadcast receiver and unbind from the service.
         if (bound) {
             unbindService(serviceConnection);
             unregisterReceiver(deviceDiscoveryReceiver);
             bound = false;
         }
-
     }
 }
