@@ -3,7 +3,6 @@ package com.example.peripheralvisiondisplay;
 import static com.example.peripheralvisiondisplay.BluetoothActivity.REQUEST_CODE;
 
 import android.annotation.SuppressLint;
-import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
 import android.app.NotificationManager;
@@ -232,6 +231,15 @@ public class HomeActivity extends AppCompatActivity {
         }
     };
 
+    /**
+     * This method is used to toggle the notification service on and off.
+     * It checks if the notification listener permission is granted.
+     * If not, it shows a dialog to explain why the app needs the permission and leads to the notification access settings for the user to turn them on manually.
+     * If the permission is granted, it checks the current state of the notification service making sure its not already running.
+     * Service is started and the notificationServiceButton text is changed to "Stop Notification Service".
+     * When the user stops the service, the notificationServiceButton text changes to "Start Notification Service".
+     * The current state of the notification service is saved in sharedpref for future reference.
+     */
     private void toggleNotificationService()
     {
         // Check if notification listener permission is granted.
@@ -251,7 +259,7 @@ public class HomeActivity extends AppCompatActivity {
                     .setNegativeButton("Cancel", null)
                     .show();
 
-            // If the notification permission is turned off when previously on, it should stop the service.
+            // If the notification permission is turned off when previously on, the service should be stopped.
             Intent notificationserviceIntent = new Intent(this, NotificationForegroundService.class);
             notificationserviceIntent.setAction(NotificationForegroundService.STOP_ACTION);
             stopService(notificationserviceIntent);
@@ -260,10 +268,9 @@ public class HomeActivity extends AppCompatActivity {
         }
         else
         {
-            //start service
+            // Start service.
             if (!toggleNotificationService) {
 
-                Log.d("functionstarted", "service starts");
                 Intent notificationserviceIntent = new Intent(this, NotificationForegroundService.class);
                 notificationserviceIntent.setAction(NotificationForegroundService.START_ACTION);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -279,10 +286,9 @@ public class HomeActivity extends AppCompatActivity {
                 editor.putBoolean("isButtonOn", true);
                 editor.apply();
             }
-            //stop service
+            // Stop service.
             else
             {
-                Log.d("functionstarted","service stops");
                 Intent notificationserviceIntent = new Intent(this, NotificationForegroundService.class);
                 notificationserviceIntent.setAction(NotificationForegroundService.STOP_ACTION);
                 stopService(notificationserviceIntent);
@@ -298,21 +304,30 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * This method is used to toggle the location service on and off.
+     * It checks if the location permission is granted.
+     * If not, it shows a dialog to explain why the app needs the permission and redirects the user to the application settings.
+     * If the permission is granted, it checks the current state of the location service making sure its not already running.
+     * Service is started and the locationServiceButton text is changed to "Stop Location Service".
+     * When the user stops the service, the locationServiceButton text changes to "Start Location Service".
+     * The current state of the service is saved in sharedpreferences for future reference.
+     */
     private void toggleLocationService()
     {
         Context context = getApplicationContext();
         AppOpsManager appOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
         int mode = appOpsManager.checkOpNoThrow(AppOpsManager.OPSTR_FINE_LOCATION, Process.myUid(), context.getPackageName());
 
-        // Check if location permission is granted
+        // Check if location permission is granted.
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || mode != AppOpsManager.MODE_ALLOWED) {
-            // Show dialog to explain why the app needs the permission
+            // Show dialog to explain why the app needs the permission.
             new AlertDialog.Builder(this)
                     .setTitle("Location Permission")
                     .setMessage("This feature requires access to your location. LOCATION PERMISSIONS MUST BE ON 'ALLOW ONLY WHILE USING THE APP' AND MUST USE PRECISE LOCATION.")
                     .setPositiveButton("Allow", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
-                            // Redirect to application settings
+                            // Redirect to application settings.
                             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                             Uri uri = Uri.fromParts("package", getPackageName(), null);
                             intent.setData(uri);
@@ -322,7 +337,7 @@ public class HomeActivity extends AppCompatActivity {
                     .setNegativeButton("Cancel", null)
                     .show();
 
-            // if the notification permission is turned off when previously on, it should stop the service.
+            // If the notification permission is turned off when previously on, it should stop the service.
             Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
             locationserviceIntent.setAction(LocationForegroundService.STOP_ACTION);
             stopService(locationserviceIntent);
@@ -332,6 +347,7 @@ public class HomeActivity extends AppCompatActivity {
         }
         else
         {
+            // Start service.
             if (!toggleLocationService) {
                 Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
                 locationserviceIntent.setAction(LocationForegroundService.START_ACTION);
@@ -349,6 +365,7 @@ public class HomeActivity extends AppCompatActivity {
                 editor.apply();
 
             }
+            // Stop service.
             else
             {
                 Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
@@ -363,33 +380,44 @@ public class HomeActivity extends AppCompatActivity {
                 editor.apply();
             }
         }
-        // Save the state of toggleLocationService in SharedPreferences
+        // Save the state of toggleLocationService in prefs
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(PREFS_TOGGLE_LOCATION_SERVICE, toggleLocationService);
         editor.apply();
     }
 
+    /**
+     * This method is called when the activity is destroyed.
+     * It stops the notification and location services.
+     * It unregisters the Bluetooth state receiver.
+     * It unbinds the BluetoothLeService.
+     */
     @Override
     protected void onDestroy() {
         super.onDestroy();
 
+        // Save state of notification service as off in sharedPref.
         SharedPreferences sharedPref = getSharedPreferences("NotificationPreferences", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putBoolean("isButtonOn", false);
         editor.apply();
 
+        // Save state of location service as off in sharedPref.
         sharedPref = getSharedPreferences("LocationPreferences", Context.MODE_PRIVATE);
         editor = sharedPref.edit();
         editor.putBoolean("isButtonOn", false);
         editor.apply();
 
+        // Stop the location service.
         Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
         locationserviceIntent.setAction(LocationForegroundService.STOP_ACTION);
         stopService(locationserviceIntent);
 
+        // Unregister the Bluetooth state receiver.
         unregisterReceiver(bluetoothStateReceiver);
 
+        // If BluetoothLeService is bound, unbind it.
         if (bound) {
             unbindService(serviceConnection);
             bound = false;

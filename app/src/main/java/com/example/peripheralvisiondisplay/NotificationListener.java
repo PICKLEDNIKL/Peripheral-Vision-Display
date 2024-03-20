@@ -1,39 +1,41 @@
 package com.example.peripheralvisiondisplay;
 
-import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.service.notification.NotificationListenerService;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
-import android.widget.Toast;
-
 import java.util.HashMap;
-import java.util.List;
 
+/**
+ * This class listens for notifications and forwards them to the NotificationForegroundService.
+ */
 public class NotificationListener extends NotificationListenerService {
 
     private HashMap<String, String> lastSentNotifications = new HashMap<>();
 
+    /**
+     * This method is called when a new notification is posted.
+     * It forwards the notification data to the NotificationForegroundService.
+     *
+     * @param sbn The StatusBarNotification holding posted notification data.
+     */
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
 
-        // Get the shared preferences
+        // Get the shared preference to see if the button to start notification service is on.
         SharedPreferences sharedPref = getSharedPreferences("NotificationPreferences", Context.MODE_PRIVATE);
         boolean isButtonOn = sharedPref.getBoolean("isButtonOn", false);
 
-//        SharedPreferences sharedPref = getSharedPreferences("NotificationPreferences", Context.MODE_PRIVATE);
+        // Get the selected importance level from shared preferences
         String selectedImportanceLevel = sharedPref.getString("selectedImportanceLevel", "High");
 
-        // Convert the selected importance level to an integer
+        // Convert the importance level from settings to the corresponding NotificationManager importance level
         int selectedImportance;
         switch (selectedImportanceLevel) {
             case "Urgent":
@@ -56,37 +58,37 @@ public class NotificationListener extends NotificationListenerService {
                 break;
         }
 
+        // If the notification service is on, process the notification
         if (isButtonOn) {
-            // Forward the notification data to your foreground service
+            // Get the package name and channel ID of the notification
             String packageName = sbn.getPackageName();
             String channelID = sbn.getNotification().extras.getString(Notification.EXTRA_CHANNEL_ID);
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-            //todo: figure out what to do with notifications that dont have tickertext
+            // Only handle notifications that have a ticker text
             if (sbn.getNotification().tickerText != null) {
                 String notificationText = sbn.getNotification().tickerText.toString();
 
-                // Check if the new notification is the same as the last sent notification
+                // Ignore notification if its the same as the previous received notification
                 if (notificationText.equals(lastSentNotifications.get(packageName))) {
-                    // Ignore the new notification
                     return;
                 }
 
                 // Update the last sent notification for the application
                 lastSentNotifications.put(packageName, notificationText);
 
-
+                // If the notification manager is not null and the channel ID is not null, get the notification channel
                 if (notificationManager != null && channelID != null) {
-                    // Get the notification channel
                     NotificationChannel channel = notificationManager.getNotificationChannel(channelID);
 
-                    // Check the importance level of the notification
+                    // Check the importance level of the notification.
                     if (channel.getImportance() < selectedImportance) {
-                        // If the importance level is less than HIGH, stop processing the notification
+                        // If the importance level is less than HIGH, stop processing the notification.
                         return;
                     }
                 }
 
+                // Create an Intent to start the NotificationForegroundService
                 Intent serviceIntent = new Intent(this, NotificationForegroundService.class);
                 serviceIntent.setAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
                 serviceIntent.putExtra("packageName", packageName);
@@ -98,27 +100,36 @@ public class NotificationListener extends NotificationListenerService {
                 broadcastIntent.putExtra("notificationText", notificationText);
                 sendBroadcast(broadcastIntent);
 
+                // Start the NotificationForegroundService as a foreground service if the device is running Android Oreo or higher
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(serviceIntent);
-                } else {
+                }
+                // Else, start service but not as a foreground service.
+                else {
                     startService(serviceIntent);
                 }
-                Log.d("notificationlistener", "seen notification");
-            } else {
-                Log.d("notificationlistener", "notification doesnt have tickertext");
             }
         }
     }
 
+    /**
+     * This method is called when the app is swiped off from the recent apps list.
+     *
+     * @param rootIntent root intent of the application being swiped off.
+     */
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         super.onTaskRemoved(rootIntent);
-        // Stop the service when the app is swiped off from the recent apps list
         stopSelf();
     }
 
+    /**
+     * This method is called when a notification is removed.
+     * Can be handled in the future if needed.
+     *
+     * @param sbn The StatusBarNotification holding removed notification data.
+     */
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
-        // Handle notification removal if needed
     }
 }
