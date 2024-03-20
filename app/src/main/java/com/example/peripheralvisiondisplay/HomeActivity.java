@@ -273,11 +273,7 @@ public class HomeActivity extends AppCompatActivity {
 
                 Intent notificationserviceIntent = new Intent(this, NotificationForegroundService.class);
                 notificationserviceIntent.setAction(NotificationForegroundService.START_ACTION);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(notificationserviceIntent);
-                } else {
-                    startService(notificationserviceIntent);
-                }
+                startForegroundService(notificationserviceIntent);
                 notificationServiceButton.setText("Stop Notification Service");
                 toggleNotificationService = true;
 
@@ -347,15 +343,11 @@ public class HomeActivity extends AppCompatActivity {
         }
         else
         {
-            // Start service.
+            // Start foreground service.
             if (!toggleLocationService) {
                 Intent locationserviceIntent = new Intent(this, LocationForegroundService.class);
                 locationserviceIntent.setAction(LocationForegroundService.START_ACTION);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(locationserviceIntent);
-                } else {
-                    startService(locationserviceIntent);
-                }
+                startForegroundService(locationserviceIntent);
                 locationServiceButton.setText("Stop Location Service");
                 toggleLocationService = true;
 

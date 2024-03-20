@@ -4,12 +4,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.service.notification.NotificationListenerService;
 import android.content.Context;
 import android.content.Intent;
 import android.service.notification.StatusBarNotification;
-import android.util.Log;
 import java.util.HashMap;
 
 /**
@@ -101,13 +99,7 @@ public class NotificationListener extends NotificationListenerService {
                 sendBroadcast(broadcastIntent);
 
                 // Start the NotificationForegroundService as a foreground service if the device is running Android Oreo or higher
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(serviceIntent);
-                }
-                // Else, start service but not as a foreground service.
-                else {
-                    startService(serviceIntent);
-                }
+                startForegroundService(serviceIntent);
             }
         }
     }

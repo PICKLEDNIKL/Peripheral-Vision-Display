@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -140,9 +141,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         searchButton = findViewById(R.id.searchButton);
         searchButton.setOnClickListener(view -> searchForDestination());
 
-        clearButton = findViewById(R.id.clearButton);
-        clearButton.setOnClickListener(view -> clearMap());
 
+        clearButton = findViewById(R.id.clearButton);
+//        clearButton.setOnClickListener(view -> clearMap());
+        // Clear the map and stop the DirectionForegroundService
+        clearButton.setOnClickListener(view -> {
+            clearMap();
+            // Create an Intent to stop the DirectionForegroundService
+            Intent serviceIntent = new Intent(MapsActivity.this, DirectionForegroundService.class);
+            stopService(serviceIntent);
+        });
 //        calibrationButton = findViewById(R.id.switchToCalibrationButton);
 //        calibrationButton.setOnClickListener(view -> switchToCalibrationActivity());
 
@@ -414,11 +422,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         new DirectionsTask(mMap, this).execute(url);
 
         Intent dfserviceintent = new Intent(this, DirectionForegroundService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(dfserviceintent);
-        } else {
-            startService(dfserviceintent);
-        }
+        startForegroundService(dfserviceintent);
         Toast.makeText(this, "Destination has been confirmed", Toast.LENGTH_SHORT).show();
     }
 

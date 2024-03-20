@@ -34,9 +34,7 @@ public class NotificationForegroundService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel();
-        }
+        createNotificationChannel();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.P)
@@ -60,7 +58,6 @@ public class NotificationForegroundService extends Service {
         return null;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     private void createNotificationChannel() {
         NotificationChannel channel = new NotificationChannel(
                 channelID,

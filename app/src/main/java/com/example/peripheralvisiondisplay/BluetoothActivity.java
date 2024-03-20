@@ -231,11 +231,7 @@ public class BluetoothActivity extends Activity {
         // Start foreground service for Bluetooth connection if not already running.
         if (!isServiceRunning(BluetoothLeService.class)) {
             Intent serviceIntent = new Intent(this, BluetoothLeService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent);
-            } else {
-                startService(serviceIntent);
-            }
+            startForegroundService(serviceIntent);
         }
     }
 

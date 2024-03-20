@@ -23,6 +23,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.location.LocationKt;
@@ -93,7 +94,6 @@ public class DirectionForegroundService extends Service{
     private float bearingFromStart;
 
 
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -110,6 +110,7 @@ public class DirectionForegroundService extends Service{
         bindService(bleintent, serviceConnection, BIND_AUTO_CREATE);
 
     }
+
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -146,17 +147,15 @@ public class DirectionForegroundService extends Service{
     }
 
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "Direction Service Channel";
-            String description = "Channel for Direction Service";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(channelID, name, importance);
-            channel.setDescription(description);
+        CharSequence name = "Direction Service Channel";
+        String description = "Channel for Direction Service";
+        int importance = NotificationManager.IMPORTANCE_DEFAULT;
+        NotificationChannel channel = new NotificationChannel(channelID, name, importance);
+        channel.setDescription(description);
 
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-            }
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        if (notificationManager != null) {
+            notificationManager.createNotificationChannel(channel);
         }
     }
 

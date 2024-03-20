@@ -264,7 +264,6 @@ public class BluetoothLeService extends Service {
         return START_NOT_STICKY;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     private void createNotificationChannel() {
 
         NotificationChannel channel = new NotificationChannel(

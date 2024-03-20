@@ -53,9 +53,7 @@ public class LocationForegroundService extends Service {
     public void onCreate() {
         super.onCreate();
         // Create a notification channel if the android version is oreo or higher
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel();
-        }
+        createNotificationChannel();
     }
 
     /**
@@ -102,7 +100,6 @@ public class LocationForegroundService extends Service {
      * It creates a new NotificationChannel with a specified ID, name, and importance level.
      * It then retrieves the system's NotificationManager and creates the notification channel.
      */
-    @RequiresApi(api = Build.VERSION_CODES.O)
     private void createNotificationChannel() {
         // Create a new NotificationChannel with an ID, name, and importance level.
         NotificationChannel channel = new NotificationChannel(
