@@ -403,8 +403,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Clear the map before drawing a new path
         mMap.clear();
 
-        // Construct the URL for the Google Maps Directions API
-//        Log.i("eas", "searchForDestination: API_KEY = " + apikey);
+        // Create URL for Google Maps Directions API
         String url = "https://maps.googleapis.com/maps/api/directions/json" +
                 "?destination=" + selectedPlace.latitude + "," + selectedPlace.longitude +
                 "&mode=walking" +

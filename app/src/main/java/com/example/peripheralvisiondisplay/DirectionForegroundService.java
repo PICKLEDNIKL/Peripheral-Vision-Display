@@ -25,6 +25,7 @@ import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.location.LocationKt;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -54,11 +55,17 @@ public class DirectionForegroundService extends Service{
     private int currentStepIndex = 0;
     private LatLng currentLatLng;
     private LatLng currentStepEndLocation;
+    private Location currentStepEndLocationL;
     private LatLng firstLatlng;
     private Location firstLocation;
 
     private int straightcount = 0;
     private int turncount = 0;
+    private int straightdistcount = 0;
+
+    // Create an array to store the last 4 location updates
+    Location[] locationArray = new Location[8];
+    int locationIndex = 0;
 
 
     private String currentStepString;
@@ -76,6 +83,16 @@ public class DirectionForegroundService extends Service{
 
     // Create a Queue to store the last 4 location updates
     private Queue<Location> locationQueue = new LinkedList<>();
+
+    private boolean firstlocationasstep = false;
+    private Location firstlocationstep;
+
+    private Location currentStepStartLocation;
+    private List<LatLng> stepsStartLocationList = new ArrayList<>();
+
+    private float bearingFromStart;
+
+
 
     @Override
     public void onCreate() {
@@ -172,20 +189,32 @@ public class DirectionForegroundService extends Service{
             currentLocation.setLatitude(currentLatitude);
             currentLocation.setLongitude(currentLongitude);
 
+
             if (currentStepEndLocation == null) {
                 // currentStepEndLocation is not available, skip processing
                 return;
             }
-            Location stependlocation = new Location("");
-            stependlocation.setLatitude(currentStepEndLocation.latitude);
-            stependlocation.setLongitude(currentStepEndLocation.longitude);
+//            Location stependlocation = new Location("");
+//            stependlocation.setLatitude(currentStepEndLocation.latitude);
+//            stependlocation.setLongitude(currentStepEndLocation.longitude);
 
             float movementThreshold = 5; // Set this to a value that makes sense for your application // this was set to 10 before
 
+//            if (firstLatlng == null) {
+//                firstLatlng = currentLatLng;
+//            }
+
             // Check if the locationQueue is empty
             if (locationQueue.isEmpty()) {
+                if (!firstlocationasstep){
+                    firstlocationstep = currentLocation;
+                    firstlocationasstep = true;
+                }
                 // This is the user's first location, add it to the queue
                 locationQueue.add(currentLocation);
+                locationArray[locationIndex] = currentLocation;
+                locationIndex++;
+
             } else {
                 // Calculate the distance between the new location and the last location in the queue
                 Location lastLocation = locationQueue.peek();
@@ -194,44 +223,111 @@ public class DirectionForegroundService extends Service{
                 // If the distance is greater than the movementThreshold, add the new location to the queue
                 if (distanceMoved > movementThreshold) {
                     locationQueue.add(currentLocation);
-                    Log.d("DirectionForegroundService", "onReceive: location added to queue");
+                    locationArray[locationIndex] = currentLocation;
+                    locationIndex++;
+                    if (locationIndex >= locationArray.length-1) {
+                        locationIndex = 0; // Reset locationIndex when it reaches the length of locationArray
+                    }
+//                    Log.d("DirectionForegroundService", "onReceive: location added to queue");
 //                    Toast.makeText(DirectionForegroundService.this, "location added to queue", Toast.LENGTH_SHORT).show();
                 }
+//                Log.d("TAG", locationArray[0] + " " + locationArray[1] + " " + locationArray[2] + " " + locationArray[3]);
+//                Log.d("TAG", String.valueOf(locationIndex));
+
+//                float userBearing = calculateBearing(currentLatLng, currentStepEndLocation);
+//                totalBearing += locations[i].bearingTo(locations[i + 1]);
+
+//                Location startLocation = new Location("");
+//                startLocation.setLatitude(currentStepStartLocation.latitude);
+//                startLocation.setLongitude(currentStepStartLocation.longitude);
+
+                // Calculate the bearing of the current step
+//                float stepBearing = calculateBearing(currentStepStartLocation, currentStepEndLocation);
+
+//                if (locationArray[0] != null && locationArray[7] != null) {
+//                    float distanceLtoS = locationArray[0].distanceTo(stependlocation);
+//                    float distanceCtoS = currentLocation.distanceTo(stependlocation);
+//                    Log.d("TAG", "onReceive: distanceLtoS: " + distanceLtoS);
+//                    Log.d("TAG", "onReceive: distanceCtoS: " + distanceCtoS);
+//                    if (distanceCtoS > distanceLtoS) {
+//                        turncount++;
+//                        if (turncount >= 4) {
+//                            if (mBluetoothLeService != null) {
+//                                mBluetoothLeService.queueMessage("TURN");
+//                                Toast.makeText(DirectionForegroundService.this, "TURN", Toast.LENGTH_SHORT).show();
+//                                turncount = 0;
+//                                straightdistcount = 0;
+//                            } else {
+//                                Toast.makeText(DirectionForegroundService.this, "TURN", Toast.LENGTH_SHORT).show();
+//                                turncount = 0;
+//                                straightdistcount = 0;
+//                            }
+//                            locationArray = new Location[8];
+//                            locationIndex = 0;
+//                        }
+//                    }
+//                    else{
+//                        straightdistcount++;
+//                        if (straightdistcount >= 4){
+//                            if (mBluetoothLeService != null) {
+//                                mBluetoothLeService.queueMessage("STR");
+//                                Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+//                                turncount = 0;
+//                                straightdistcount = 0;
+//                            } else {
+//                                Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+//                                turncount = 0;
+//                                straightdistcount = 0;
+//                            }
+//                            locationArray = new Location[8];
+//                            locationIndex = 0;
+//                        }
+//                    }
+//                }
             }
 
-            if (locationQueue.size() == 4) {
+            if (locationQueue.size() == 8) {
                 float totalBearing = 0;
-                Location[] locations = locationQueue.toArray(new Location[0]);
+                Location[] locations = locationQueue.toArray(new Location[8]);
                 for (int i = 0; i < locations.length - 1; i++) {
                     totalBearing += locations[i].bearingTo(locations[i + 1]);
                 }
-                float averageBearing = totalBearing / (locationQueue.size() - 1);
+                float averageBearing = totalBearing / (locationQueue.size()); // - 1); //TODO: MAYBE ITS DOING IT BASED ON 7 INSTEAD OF 8
 
-                // Calculate the bearing from the start location to the stependlocation
-                float bearingFromStart = locations[0].bearingTo(stependlocation);
+                if (currentStepStartLocation == null) {
+                    currentStepStartLocation = new Location(""); // Replace with a default value or a value from your application
+                    currentStepStartLocation = firstLocation;
+                }
+
+                Log.d("DirectionForegroundService", "currentStepStartLocation before bearingTo: " + currentStepStartLocation);
+                bearingFromStart = currentStepStartLocation.bearingTo(currentStepEndLocationL);
+
+//                Location stependlocation = new Location("");
+//                stependlocation.setLatitude(stepsStartLocationList.get(0).latitude);
+//                stependlocation.setLongitude(stepsStartLocationList.get(0).longitude);
 
                 // Check if the avg bearing of the user is less than 90 degrees from the step destination which means the user is walking in the right direction.
                 if (Math.abs(averageBearing - bearingFromStart) <= 90) {
                     straightcount++;
                     // The user is moving in the right direction, send a message to keep going straight
                     if (mBluetoothLeService != null) {
-                        if (straightcount == 4 || !firststraightqueue){
-                            mBluetoothLeService.queueMessage("STR");
-                            Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
-                            straightcount = 0;
-                            firststraightqueue = true;
-                        }
+//                        if (straightcount >= 2 || !firststraightqueue){
+                        mBluetoothLeService.queueMessage("STR");
+                        Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+                        straightcount = 0;
+                        firststraightqueue = true;
+//                        }
                     } else {
-                        if (straightcount == 4 || !firststraightqueue){
+//                        if (straightcount >= 2 || !firststraightqueue){
                             // Handle the situation when mBluetoothLeService is null
 //                            Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending message STR");
-                            Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
-                            straightcount = 0;
-                            firststraightqueue = true;
-                        }
+                        Toast.makeText(DirectionForegroundService.this, "STR", Toast.LENGTH_SHORT).show();
+                        straightcount = 0;
+                        firststraightqueue = true;
+//                        }
                     }
                 // Check if the avg bearing of the user is larger than 225 degrees from the step destination which means the user is walking in the wrong direction.
-                } else if (Math.abs(averageBearing - bearingFromStart) >= 225) {
+                } else if (Math.abs(averageBearing - bearingFromStart) > 90) {
                     // The user is not moving in the right direction, send a message to turn
                     if (mBluetoothLeService != null) {
                         mBluetoothLeService.queueMessage("TURN");
@@ -241,26 +337,48 @@ public class DirectionForegroundService extends Service{
 //                        Log.e("DirectionForegroundService", "mBluetoothLeService is null for sending message TURN");
                         Toast.makeText(DirectionForegroundService.this, "TURN", Toast.LENGTH_SHORT).show();
                     }
-                    straightcount = 3;
+                    straightcount = 0;
                 }
                 locationQueue.clear();
             }
 
             if (isStepFulfilled()) {
                 straightcount = 0;
+                turncount = 0;
+                straightdistcount = 0;
                 firststraightqueue = false;
                 locationQueue.clear();
 
-                // Handle condition when the user has completed their journey and there are no step information left.
-                currentStepString = getNextStep();
-                if (currentStepString == null){
+                // Check if there are more steps left
+                if (currentStepIndex < stepsList.size()) {
+                    currentStepString = stepsList.get(currentStepIndex);
+                    currentStepEndLocationL = new Location("");
+                    currentStepEndLocationL.setLatitude(stepsEndLocationList.get(currentStepIndex).latitude);
+                    currentStepEndLocationL.setLongitude(stepsEndLocationList.get(currentStepIndex).longitude);
+                    currentStepStartLocation = new Location("");
+                    currentStepStartLocation.setLatitude(stepsStartLocationList.get(currentStepIndex).latitude);
+                    currentStepStartLocation.setLongitude(stepsStartLocationList.get(currentStepIndex).longitude);
+                    currentStepEndLocation = stepsEndLocationList.get(currentStepIndex);
+                    currentStepIndex++;
+                    createNotification("Step "+ currentStepIndex + ": " + currentStepString);
+                } else {
+                    // No more steps left, handle the end of the navigation
                     currentStepString = "You have reached your destination.";
+                    Toast.makeText(DirectionForegroundService.this, "You have reached your destination.", Toast.LENGTH_SHORT).show();
+                    createNotification("You have reached your destination.");
+                    currentStepEndLocation = null;
                 }
-                mBluetoothLeService.sendDirectionInfo(currentStepString);
 
-                currentStepEndLocation = getNextStepEndLocation();
-                currentStepIndex++;
-                createNotification("Step "+ currentStepIndex + " : " + currentStepString);
+                // Send the current step string to the Bluetooth device
+                if (mBluetoothLeService != null) {
+                    mBluetoothLeService.sendDirectionInfo(currentStepString);
+                } else {
+                    // Handle the situation when mBluetoothLeService is null
+                    Log.e("DirectionForegroundService", "mBluetoothLeService is null");
+                }
+
+                locationArray = new Location[8];
+                locationIndex = 0;
             }
         }
     };
@@ -272,6 +390,18 @@ public class DirectionForegroundService extends Service{
                 stepsList = intent.getStringArrayListExtra("StepsList");
                 stepsEndLocationList = intent.getParcelableArrayListExtra("StepsEndLocationList");
                 stepsDistanceList = intent.getIntegerArrayListExtra("StepsDistanceList");
+                firstLatlng = intent.getParcelableExtra("FirstLatLng");
+
+                // Clear the start locations list
+                stepsStartLocationList.clear();
+
+                // Add the user's initial location as the start location of the first step
+                stepsStartLocationList.add(firstLatlng);
+
+                // For each subsequent step, add the end location of the previous step as its start location
+                stepsStartLocationList.addAll(stepsEndLocationList);
+                Log.d("Direction", "onReceive: stepsStartLocationList: " + stepsStartLocationList);
+                Log.d("Direction", "onReceive: stepsEndLocationList: " + stepsEndLocationList);
 
                 Log.d("dfservice", "onReceive works");
 
@@ -288,22 +418,22 @@ public class DirectionForegroundService extends Service{
                     Log.e("DirectionForegroundService", "mBluetoothLeService is null for stepdata");
                 }
 
+                currentStepStartLocation = new Location("");
+                currentStepStartLocation.setLatitude(stepsStartLocationList.get(currentStepIndex).latitude);
+                currentStepStartLocation.setLongitude(stepsStartLocationList.get(currentStepIndex).longitude);
+                Log.d("DirectionForegroundService", "currentStepStartLocation set: " + currentStepStartLocation);
+
+                currentStepEndLocationL = new Location("");
+                currentStepEndLocationL.setLatitude(stepsEndLocationList.get(currentStepIndex).latitude);
+                currentStepEndLocationL.setLongitude(stepsEndLocationList.get(currentStepIndex).longitude);
+                Log.d("DirectionForegroundService", "currentStepEndLocation set: " + currentStepEndLocationL);
+
+
                 currentStepEndLocation = stepsEndLocationList.get(currentStepIndex);
                 currentStepIndex++;
-                createNotification("Step "+ currentStepIndex + " : " + currentStepString);
+                createNotification("Step " + currentStepIndex + ": " + currentStepString);
 
-                // Print each step in the log
-                for (String step : stepsList) {
-                    Log.d("dfservice", step);
-                }
-                // Print each step in the log
-                for (LatLng step : stepsEndLocationList) {
-                    Log.d("dfservice", "Step latlng: " + step);
-                }
-                // Print each step in the log
-                for (Integer step : stepsDistanceList) {
-                    Log.d("dfservice", "Step distance: " + step);
-                }
+
             }
         }
     };
@@ -351,16 +481,16 @@ public class DirectionForegroundService extends Service{
         return distance * 1000;
     }
 
-    private float calculateBearing(LatLng point1, LatLng point2) {
-        double lat1 = Math.toRadians(point1.latitude);
-        double lat2 = Math.toRadians(point2.latitude);
-        double deltaLng = Math.toRadians(point2.longitude - point1.longitude);
-
-        double y = Math.sin(deltaLng) * Math.cos(lat2);
-        double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
-
-        return (float) ((Math.toDegrees(Math.atan2(y, x)) + 360) % 360);
-    }
+//    private float calculateBearing(LatLng point1, LatLng point2) {
+//        double lat1 = Math.toRadians(point1.latitude);
+//        double lat2 = Math.toRadians(point2.latitude);
+//        double deltaLng = Math.toRadians(point2.longitude - point1.longitude);
+//
+//        double y = Math.sin(deltaLng) * Math.cos(lat2);
+//        double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+//
+//        return (float) ((Math.toDegrees(Math.atan2(y, x)) + 360) % 360);
+//    }
 
     private void createNotification(String message) {
         Notification notification = new NotificationCompat.Builder(this, channelID)

@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -21,14 +23,20 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 
+// todo: if this doesnt work then readd async task and override methods.
+public class DirectionsTask {
 
-public class DirectionsTask extends AsyncTask<String, Void, String> {
+    private final Executor executor = Executors.newSingleThreadExecutor(); // change according to your requirements
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
 
     private GoogleMap mMap;
     private Context mContext;
@@ -38,13 +46,21 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
     private int currentStepIndex = 0;
     private LatLng currentStepEndLocation;
     private List<String> polylineList = new ArrayList<>();
+    private LatLng firstlatlng;
+
 
     DirectionsTask(GoogleMap mMap, Context context) {
         this.mMap = mMap;
         this.mContext = context;
     }
 
-    @Override
+    public void execute(String url) {
+        executor.execute(() -> {
+            String result = doInBackground(url);
+            handler.post(() -> onPostExecute(result));
+        });
+    }
+
     protected String doInBackground(String... urls) {
         String response = "";
         HttpURLConnection urlConnection = null;
@@ -69,7 +85,6 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
         return response;
     }
 
-    @Override
     protected void onPostExecute(String result) {
         // Handle the result - the 'result' variable contains the API response as a JSON string
         Log.d("DirectionsTask", "API Response: " + result);
@@ -97,8 +112,6 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                     // Get the steps of the leg
                     JSONArray steps = leg.getJSONArray("steps");
 
-                    // Clear mMap of markers and polylines
-//                    mMap.clear();
                     stepsList.clear();
                     stepsEndLocationList.clear();
                     stepsDistanceList.clear();
@@ -115,6 +128,15 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                             instruction = instruction.replace("<b>", "").replace("</b>", "");
                         }
                         stepsList.add(instruction);
+
+                        if (j == 0) {
+                            // Get the start location of the first step
+                            JSONObject startLocation = step.getJSONObject("start_location");
+                            double startLat = startLocation.getDouble("lat");
+                            double startLng = startLocation.getDouble("lng");
+                            firstlatlng = new LatLng(startLat, startLng);
+                            mMap.addMarker(new MarkerOptions().position(firstlatlng).title("Start"));
+                        }
 
                         // Get the start and end location of the step
                         JSONObject endLocation = step.getJSONObject("end_location");
@@ -165,6 +187,7 @@ public class DirectionsTask extends AsyncTask<String, Void, String> {
                 intent.putStringArrayListExtra("StepsList", new ArrayList<>(stepsList));
                 intent.putParcelableArrayListExtra("StepsEndLocationList", new ArrayList<>(stepsEndLocationList));
                 intent.putIntegerArrayListExtra("StepsDistanceList", new ArrayList<>(stepsDistanceList));
+                intent.putExtra("FirstLatLng", firstlatlng);
                 sendBroadcast(intent);
 
             } else {

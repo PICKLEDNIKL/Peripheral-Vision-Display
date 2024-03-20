@@ -35,16 +35,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
+/**
+ * HomeActivity is the main activity of the application.
+ * It has buttons to start and stop the notification and location services.
+ * Theres also a bottom navigation bar to switch to other activities.
+ */
 public class HomeActivity extends AppCompatActivity {
     Button notificationServiceButton;
     Button locationServiceButton;
     BottomNavigationView bottomNavigationView;
     boolean toggleNotificationService = false;
     boolean toggleLocationService = false;
-
-    private BluetoothManager bluetoothManager;
-    private BluetoothAdapter bluetoothAdapter;
 
     private BluetoothLeService bluetoothLeService;
     private boolean bound = false;
@@ -59,8 +60,10 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        // Get shared preferences for LED settings and check if it's the first launch of the app.
         SharedPreferences sharedPref = getSharedPreferences("LedPreferences", Context.MODE_PRIVATE);
         boolean isFirstLaunch = sharedPref.getBoolean("isFirstLaunch", true);
+        // If it's the first launch, set the default LED colors.
         if (isFirstLaunch) {
             new Handler().postDelayed(() -> {
                 SharedPreferences.Editor editor = sharedPref.edit();
@@ -74,21 +77,27 @@ public class HomeActivity extends AppCompatActivity {
             }, 5000); // Delay of 5 seconds
         }
 
+        // Initialize the notification service button and run the toggleNotificationService function when clicked.
         notificationServiceButton = findViewById(R.id.notificationServiceButton);
         notificationServiceButton.setOnClickListener(view -> toggleNotificationService());
 
+        // Initialize the location service button and run the toggleLocationService function when clicked.
         locationServiceButton = findViewById(R.id.locationServiceButton);
         locationServiceButton.setOnClickListener(view -> toggleLocationService());
 
+        // Initialize the bottom navigation bar and set the listener for the menu items.
         bottomNavigationView = findViewById(R.id.bottom_menu);
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Intent intent;
             int itemId = item.getItemId();
+
+            // Switch to the selected activity.
             if (itemId == R.id.home) {
                 intent = new Intent(HomeActivity.this, HomeActivity.class);
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.map) {
+                // Check if location permission is granted.
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     if (toggleLocationService) {
                         intent = new Intent(HomeActivity.this, MapsActivity.class);
@@ -114,19 +123,22 @@ public class HomeActivity extends AppCompatActivity {
             return false;
         });
 
+        // Check if the app has the BLUETOOTH_SCAN permission.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.BLUETOOTH_SCAN}, REQUEST_BLUETOOTH_SCAN_PERMISSION);
             }
         }
 
-        bluetoothManager = getSystemService(BluetoothManager.class);
-        bluetoothAdapter = bluetoothManager.getAdapter();
+        // Get the Bluetooth adapter and check if Bluetooth is supported.
+        BluetoothManager bluetoothManager = getSystemService(BluetoothManager.class);
+        BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
 
         if (bluetoothAdapter == null) {
             Toast.makeText(this, "This device doesn't support bluetooth", Toast.LENGTH_SHORT).show();
         }
 
+        // Check if Bluetooth is enabled.
         if (!bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
@@ -135,96 +147,72 @@ public class HomeActivity extends AppCompatActivity {
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
 
+        // Register the Bluetooth state receiver.
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         registerReceiver(bluetoothStateReceiver, filter);
 
-
-
+        // Hide the action bar.
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
 
-//        if (!isServiceRunning(BluetoothLeService.class)) {
-//            Intent serviceIntent = new Intent(this, BluetoothLeService.class);
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                startForegroundService(serviceIntent);
-//                Log.d("homeactivity", "onCreate: startforegroundservice for ble");
-//            } else {
-//                startService(serviceIntent);
-//            }
-//        }
-
+        // Check if the app has the BLUETOOTH_CONNECT permission.
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_CODE);
         }
 
-        // Bind to the service
+        // Bind to the BluetoothLeService.
         Intent intent = new Intent(this, BluetoothLeService.class);
         bindService(intent, serviceConnection, BIND_AUTO_CREATE);
 
     }
 
-    private boolean isServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
+    /**
+     * BroadcastReceiver for Bluetooth state changes.
+     * This receiver listens for the ACTION_STATE_CHANGED action for the bluetooth adapter.
+     * When the Bluetooth state changes to STATE_OFF, it shows a toast message and sends
+     * an intent to request the user to enable Bluetooth.
+     */
     private final BroadcastReceiver bluetoothStateReceiver = new BroadcastReceiver() {
         @SuppressLint("MissingPermission")
         @Override
         public void onReceive(Context context, Intent intent) {
+            // Get the action from the intent.
             final String action = intent.getAction();
+            // Create an intent to request the user to enable Bluetooth.
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 
+            // Check if state of bluetooth adapter has changed.
             if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                // Get state of bluetooth adapter
                 final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+                // if the state is off, then make the user turn it back on.
                 switch (state) {
                     case BluetoothAdapter.STATE_OFF:
                         Toast.makeText(context, "Bluetooth turned off. Turn back on to use the Peripheral Vision Display Application", Toast.LENGTH_SHORT).show();
                         startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                         break;
                     case BluetoothAdapter.STATE_ON:
-//                        Toast.makeText(context, "Bluetooth turned on", Toast.LENGTH_SHORT).show();
                         break;
                 }
             }
         }
     };
 
-//    // Code to manage Service lifecycle.
-//    private ServiceConnection serviceConnection = new ServiceConnection() {
-//
-//        @Override
-//        public void onServiceConnected(ComponentName componentName, IBinder service) {
-//            bluetoothService = ((BluetoothLeService.LocalBinder) service).getService();
-//            if (bluetoothService != null) {
-//                //TODO: MAYBE MAKE IT SO IT STARTS THE SERVICE HERE OF SOMETHING TO MAKE IT WORK FIRST TIME.
-//                if (!bluetoothService.initialize()) {
-//                    Log.e("serviceconnected", "Unable to initialize Bluetooth");
-//                    finish();
-//                }
-//                bound = true;
-////                bluetoothService.connect(deviceAddress);
-//                Log.e("serviceconnected", "conencted to bluetooth service");
-//            }
-//        }
-//
-//        @Override
-//        public void onServiceDisconnected(ComponentName componentName) {
-//            bluetoothService = null;
-//            // TODO: 07/01/2024 check if bounds are necessary and remove from here and from destroy if not.
-//            bound = false;
-//        }
-//    };
-
-    // Code to manage Service lifecycle.
+    /**
+     * ServiceConnection for managing the lifecycle of the BluetoothLeService.
+     * This is used to receive callbacks stating if the bluetoothLeService is connected or disconnected.
+     */
     private final ServiceConnection serviceConnection = new ServiceConnection() {
 
+        /**
+         * Called when a connection to the Service has been gained.
+         * If bound is true, this means that the BluetoothLeService is connected.
+         * If bound is false, this means that the BluetoothLeService is disconnected.
+         *
+         * @param componentName The component name of the service that has been connected.
+         * @param service The IBinder of the Service's communication channel.
+         */
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             BluetoothLeService.LocalBinder binder = (BluetoothLeService.LocalBinder) service;
@@ -232,6 +220,11 @@ public class HomeActivity extends AppCompatActivity {
             bound = true;
         }
 
+        /**
+         * Called when a connection to the Service has been lost.
+         *
+         * @param componentName The component name of the service that has been disconnected.
+         */
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             bluetoothLeService = null;
@@ -239,52 +232,12 @@ public class HomeActivity extends AppCompatActivity {
         }
     };
 
-//    // LISTEN FOR UPDATES IN ACTIVITY
-//    private final BroadcastReceiver gattUpdateReceiver = new BroadcastReceiver() {
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            final String action = intent.getAction();
-//            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-//                // Update your UI here to reflect that the device is connected
-//                Toast.makeText(context, "device is connected", Toast.LENGTH_SHORT).show();
-//
-//            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
-//                // Update your UI here to reflect that the device is disconnected
-//                Toast.makeText(context, "device is disconnected", Toast.LENGTH_SHORT).show();
-//
-//            }
-//        }
-//    };
-
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//        registerReceiver(gattUpdateReceiver, makeGattUpdateIntentFilter());
-//        if (bluetoothService != null) {
-//            final boolean result = bluetoothService.connect(deviceAddress);
-//            Log.d("HomeActivity", "Connect request result=" + result);
-//        }
-//    }
-//
-//    @Override
-//    protected void onPause() {
-//        super.onPause();
-//        unregisterReceiver(gattUpdateReceiver);
-//    }
-
-//    private static IntentFilter makeGattUpdateIntentFilter() {
-//        final IntentFilter intentFilter = new IntentFilter();
-//        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-//        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-//        return intentFilter;
-//    }
-
     private void toggleNotificationService()
     {
-        // Check if notification listener permission is granted
+        // Check if notification listener permission is granted.
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (!notificationManager.isNotificationPolicyAccessGranted()) {
-            // Show dialog to explain why the app needs the permission
+            // Show dialog to explain why the app needs the permission.
             new AlertDialog.Builder(this)
                     .setTitle("Notification Listener Permission")
                     .setMessage("This app requires access to notifications for the notification reader to work.")
@@ -298,8 +251,7 @@ public class HomeActivity extends AppCompatActivity {
                     .setNegativeButton("Cancel", null)
                     .show();
 
-
-            // if the notification permission is turned off when previously on, it should stop the service.
+            // If the notification permission is turned off when previously on, it should stop the service.
             Intent notificationserviceIntent = new Intent(this, NotificationForegroundService.class);
             notificationserviceIntent.setAction(NotificationForegroundService.STOP_ACTION);
             stopService(notificationserviceIntent);
@@ -437,8 +389,6 @@ public class HomeActivity extends AppCompatActivity {
         stopService(locationserviceIntent);
 
         unregisterReceiver(bluetoothStateReceiver);
-
-//        unbindService(serviceConnection);
 
         if (bound) {
             unbindService(serviceConnection);
