@@ -30,14 +30,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
-// todo: if this doesnt work then readd async task and override methods.
+/**
+ * This class is used to get directions data from Google Directions API.
+ * It uses an Executor and handler to get retrieve data from the API and parse the JSON response.
+ * The JSON response is handled and information about the navigation journey is displayed on MapsActivity.
+ * Shared preferences are used to store JSON data to be used in the DirectionForegroundService.
+ */
 public class DirectionsTask {
 
-    private final Executor executor = Executors.newSingleThreadExecutor(); // change according to your requirements
+    private final Executor executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
-
-
     private GoogleMap mMap;
     private Context mContext;
     private List<String> stepsList = new ArrayList<>();
@@ -49,11 +51,25 @@ public class DirectionsTask {
     private LatLng firstlatlng;
 
 
+    /**
+     * Constructor for the DirectionsTask class.
+     * Initializes Google map and context instances for this class.
+     *
+     * @param mMap The Google map in MapsActivity.
+     * @param context The context of the calling activity.
+     */
     DirectionsTask(GoogleMap mMap, Context context) {
         this.mMap = mMap;
         this.mContext = context;
     }
 
+    /**
+     * This method is called to execute the DirectionsTask.
+     * An executor is used to run the task in a separate thread.
+     * The handler is used to post the result back to the main thread.
+     *
+     * @param url The URL to fetch data from the Google Directions API.
+     */
     public void execute(String url) {
         executor.execute(() -> {
             String result = doInBackground(url);
@@ -61,23 +77,34 @@ public class DirectionsTask {
         });
     }
 
+    /**
+     * This method is called to get data from the Google Directions API and return the response as a string.
+     *
+     * @param urls The URL to get data from the Google Directions API.
+     * @return The response from the API as a string.
+     */
     protected String doInBackground(String... urls) {
         String response = "";
         HttpURLConnection urlConnection = null;
         try {
+            // Create URL object and open connection
             URL url = new URL(urls[0]);
             urlConnection = (HttpURLConnection) url.openConnection();
+
             InputStream in = urlConnection.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             StringBuilder stringBuilder = new StringBuilder();
             String line;
+            // Read the response line by line and append the response together to create a single response string.
             while ((line = reader.readLine()) != null) {
                 stringBuilder.append(line);
             }
             response = stringBuilder.toString();
         } catch (IOException e) {
+            // Log an error message for exception.
             Log.e("DirectionsTask", "Error fetching data from URL", e);
         } finally {
+            // After the response fetched, disconnect the URL connection.
             if (urlConnection != null) {
                 urlConnection.disconnect();
             }
@@ -85,26 +112,38 @@ public class DirectionsTask {
         return response;
     }
 
+    /**
+     * This method is called after the doInBackground method has finished executing, using the handler.
+     * The parseDirectionsData method is called and the result from doInBackground is passed.
+     *
+     * @param result The result of doInBackground, which is a the string response from the Google Directions API.
+     */
     protected void onPostExecute(String result) {
-        // Handle the result - the 'result' variable contains the API response as a JSON string
-        Log.d("DirectionsTask", "API Response: " + result);
-        // You can parse the JSON and extract directions data to display on the map or UI
         parseDirectionsData(result);
-
-
     }
 
+    /**
+     * This method is called to parse the directions data from the Google Directions API.
+     * The JSON response is parsed and the steps strings, end locations, and distance of each step are stored in lists.
+     * The polyline for each step is decoded and drawn on the map.
+     * Stores data in shared preferences to be used in MapsActivity send data to DirectionForegroundService.
+     *
+     * @param jsonData The JSON response from Google's Directions API.
+     */
     private void parseDirectionsData(String jsonData) {
         try {
+            // Create a JSON object from JSON response.
             JSONObject jsonObject = new JSONObject(jsonData);
 
-            // Check if the response status is OK
+            // Check if the response status is OK.
             String status = jsonObject.getString("status");
             if (status.equals("OK")) {
+                // Get the routes from the JSON object.
                 JSONArray routes = jsonObject.getJSONArray("routes");
-                JSONObject route = routes.getJSONObject(0); // Take the first route
+                // Only get the first route as there is only one route.
+                JSONObject route = routes.getJSONObject(0);
 
-                // Get the legs of the route
+                // Get the legs of the route.
                 JSONArray legs = route.getJSONArray("legs");
                 for (int i = 0; i < legs.length(); i++) {
                     JSONObject leg = legs.getJSONObject(i);
@@ -112,6 +151,7 @@ public class DirectionsTask {
                     // Get the steps of the leg
                     JSONArray steps = leg.getJSONArray("steps");
 
+                    // Clear the steps list, steps end location list, and steps distance list
                     stepsList.clear();
                     stepsEndLocationList.clear();
                     stepsDistanceList.clear();
@@ -119,18 +159,18 @@ public class DirectionsTask {
                     for (int j = 0; j < steps.length(); j++) {
                         JSONObject step = steps.getJSONObject(j);
 
-                        // Get the text instruction for the step
+                        // Get the text instruction for steps.
                         String instruction = step.optString("maneuver");
 
-                        // if maneuver is empty, get html_instructions
+                        // If there isn't any maneuver data, get the html_instruction for the step instead.
                         if (instruction.isEmpty()){
                             instruction = step.getString("html_instructions");
                             instruction = instruction.replace("<b>", "").replace("</b>", "");
                         }
                         stepsList.add(instruction);
 
+                        // Get the start location of the first step and add start marker to the map
                         if (j == 0) {
-                            // Get the start location of the first step
                             JSONObject startLocation = step.getJSONObject("start_location");
                             double startLat = startLocation.getDouble("lat");
                             double startLng = startLocation.getDouble("lng");
@@ -138,44 +178,43 @@ public class DirectionsTask {
                             mMap.addMarker(new MarkerOptions().position(firstlatlng).title("Start"));
                         }
 
-                        // Get the start and end location of the step
-                        JSONObject endLocation = step.getJSONObject("end_location");
-
                         // Get the end location of the step
+                        JSONObject endLocation = step.getJSONObject("end_location");
                         double endLat = endLocation.getDouble("lat");
                         double endLng = endLocation.getDouble("lng");
                         currentStepEndLocation = new LatLng(endLat, endLng);
-                        //TODO: MAYBE ADD THIS BACK LATER
+
+                        // Adding this back will add markers for each step end
 //                        mMap.addMarker(new MarkerOptions().position(currentStepEndLocation).title("Step " + (j + 1) + " End"));
-                        // adds currentstepend to list to send to directionforegroundservice
+
+                        // Add current step end location to list.
                         stepsEndLocationList.add(currentStepEndLocation);
 
-                        // Get the start and end location of the step
+                        // Get the distance data of the step
                         JSONObject distance = step.getJSONObject("distance");
                         Integer distanceval = distance.getInt("value");
                         stepsDistanceList.add(distanceval);
 
-                        // Get the polyline for each step
+                        // Get the polyline data for each step
                         JSONObject polylineObject = step.getJSONObject("polyline");
                         String polyline = polylineObject.getString("points");
-
                         polylineList.add(polyline);
 
-                        // Decode the polyline into LatLng points and draw it on the map
+                        // Decode the polyline into a list of LatLng points and show it on the map
                         List<LatLng> decodedPolyline = PolyUtil.decode(polyline);
                         PolylineOptions polylineOptions = new PolylineOptions();
                         polylineOptions.addAll(decodedPolyline);
-
                         mMap.addPolyline(polylineOptions);
                     }
+                    // Add destination marker to the map
                     mMap.addMarker(new MarkerOptions().position(currentStepEndLocation).title("Destination"));
                 }
 
-                // Convert the polyline list to a single string
+                // Convert the polyline list and marker list to strings.
                 String polylineData = String.join(";", polylineList);
                 String markerData = String.join(";", stepsEndLocationList.toString());
 
-                // Store the polyline data in SharedPreferences
+                // Store the polyline and marker data in SharedPreferences to use in MapsActivity.
                 SharedPreferences sharedPref = mContext.getSharedPreferences("PolylineData", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPref.edit();
                 editor.putString("polyline", polylineData);
@@ -191,7 +230,7 @@ public class DirectionsTask {
                 sendBroadcast(intent);
 
             } else {
-                // Handle other status responses (e.g., ZERO_RESULTS, NOT_FOUND, etc.)
+                Log.e("DirectionsTask", "Error fetching data from URL");
             }
         } catch (JSONException e) {
             e.printStackTrace();

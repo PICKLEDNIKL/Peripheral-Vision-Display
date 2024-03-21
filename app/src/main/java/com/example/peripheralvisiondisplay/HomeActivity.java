@@ -1,7 +1,6 @@
 package com.example.peripheralvisiondisplay;
 
 import static com.example.peripheralvisiondisplay.BluetoothActivity.REQUEST_CODE;
-
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.AppOpsManager;
@@ -24,16 +23,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
-import android.util.Log;
 import android.widget.Button;
 import android.Manifest;
 import android.widget.Toast;
 import android.os.Process;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
 /**
  * HomeActivity is the main activity of the application.
  * It has buttons to start and stop the notification and location services.
