@@ -25,7 +25,7 @@ import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-
+// TODO: START COMMENTING THIS.
 public class SettingsActivity extends AppCompatActivity {
     BottomNavigationView bottomNavigationView;
     Button saveChangesButton;
@@ -339,11 +339,6 @@ public class SettingsActivity extends AppCompatActivity {
                     break;
             }
 
-//            // Save the selected color in shared preferences
-//            SharedPreferences.Editor editor = ledsharedPref.edit();
-//            editor.putInt(prefKey, selectedColor);
-//            editor.apply();
-
             // Change the background color of the view
             view.setBackgroundColor(selectedColor);
         });
@@ -355,9 +350,6 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        // ...
-
         unbindService(serviceConnection);
     }
 }

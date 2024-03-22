@@ -1,20 +1,16 @@
 package com.example.peripheralvisiondisplay;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,12 +39,9 @@ public class DirectionsTask {
     private Context mContext;
     private List<String> stepsList = new ArrayList<>();
     private List<LatLng> stepsEndLocationList = new ArrayList<>();
-    private List<Integer> stepsDistanceList = new ArrayList<>();
-    private int currentStepIndex = 0;
     private LatLng currentStepEndLocation;
     private List<String> polylineList = new ArrayList<>();
     private LatLng firstlatlng;
-
 
     /**
      * Constructor for the DirectionsTask class.
@@ -154,7 +146,6 @@ public class DirectionsTask {
                     // Clear the steps list, steps end location list, and steps distance list
                     stepsList.clear();
                     stepsEndLocationList.clear();
-                    stepsDistanceList.clear();
 
                     for (int j = 0; j < steps.length(); j++) {
                         JSONObject step = steps.getJSONObject(j);
@@ -190,11 +181,6 @@ public class DirectionsTask {
                         // Add current step end location to list.
                         stepsEndLocationList.add(currentStepEndLocation);
 
-                        // Get the distance data of the step
-                        JSONObject distance = step.getJSONObject("distance");
-                        Integer distanceval = distance.getInt("value");
-                        stepsDistanceList.add(distanceval);
-
                         // Get the polyline data for each step
                         JSONObject polylineObject = step.getJSONObject("polyline");
                         String polyline = polylineObject.getString("points");
@@ -225,7 +211,6 @@ public class DirectionsTask {
                 Intent intent = new Intent("StepsData");
                 intent.putStringArrayListExtra("StepsList", new ArrayList<>(stepsList));
                 intent.putParcelableArrayListExtra("StepsEndLocationList", new ArrayList<>(stepsEndLocationList));
-                intent.putIntegerArrayListExtra("StepsDistanceList", new ArrayList<>(stepsDistanceList));
                 intent.putExtra("FirstLatLng", firstlatlng);
                 sendBroadcast(intent);
 
@@ -237,8 +222,13 @@ public class DirectionsTask {
         }
     }
 
-    // This method is required because DirectionsTask is not a Context
-    // We get the application context from the GoogleMap instance
+    /**
+     * This method is used to send a broadcast intent.
+     * Used to ensure broadcast is only sent if the google map and context are initialized.
+     * This method is required because DirectionsTask is not a Context
+     *
+     * @param intent The Intent to be broadcasted.
+     */
     private void sendBroadcast(Intent intent) {
         if (mMap != null && mContext != null) {
             mContext.sendBroadcast(intent);

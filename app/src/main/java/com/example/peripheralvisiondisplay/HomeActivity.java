@@ -166,8 +166,7 @@ public class HomeActivity extends AppCompatActivity {
     /**
      * BroadcastReceiver for Bluetooth state changes.
      * This receiver listens for the ACTION_STATE_CHANGED action for the bluetooth adapter.
-     * When the Bluetooth state changes to STATE_OFF, it shows a toast message and sends
-     * an intent to request the user to enable Bluetooth.
+     * When the Bluetooth state changes to STATE_OFF, it shows a toast message and sends an intent to request the user to enable Bluetooth.
      */
     private final BroadcastReceiver bluetoothStateReceiver = new BroadcastReceiver() {
         @SuppressLint("MissingPermission")
