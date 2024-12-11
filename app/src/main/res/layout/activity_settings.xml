@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/bottom_menu"
+        android:fillViewport="true">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Settings"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="40sp"
+                android:textSize="30sp"/>
+
+            <TextView
+                android:id="@+id/notificationheader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Notification Settings"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="40sp"
+                android:layout_below="@+id/title"
+                android:textSize="17sp"/>
+
+            <TextView
+                android:id="@+id/notificationtext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Notification Importance Level (Notification service will work for any notifications above and equal to the threshold chosen):"
+                android:layout_marginLeft="20sp"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textColor="@color/black"
+                android:layout_marginTop="20sp"
+                android:layout_below="@+id/notificationheader"
+                android:textSize="15sp"/>
+
+            <Spinner
+                android:id="@+id/spinnerImportanceLevel"
+                android:layout_width="match_parent"
+                android:layout_height="48sp"
+                android:layout_centerHorizontal="true"
+                android:layout_marginLeft="200sp"
+                android:layout_gravity="center"
+                android:textSize="20sp"
+                android:layout_below="@id/notificationtext"
+                android:layout_marginTop="20sp"/>
+
+            <TextView
+                android:id="@+id/glassesheader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Glasses Settings"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="40sp"
+                android:layout_below="@+id/spinnerImportanceLevel"
+                android:textSize="17sp"/>
+
+            <TextView
+                android:id="@+id/glassestext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="These settings will be sent to the microcontroller when there is bluetooth connection and when the ''Save Changes'' button is pressed."
+                android:layout_marginLeft="20sp"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textColor="@color/black"
+                android:layout_marginTop="20sp"
+                android:layout_below="@+id/glassesheader"
+                android:textSize="15sp"/>
+
+            <Switch
+                android:id="@+id/switch_led_movement"
+                android:layout_width="match_parent"
+                android:layout_height="48sp"
+                android:layout_centerHorizontal="true"
+                android:paddingLeft="10sp"
+                android:layout_marginLeft="200sp"
+                android:text="LED Movement"
+                android:layout_below="@+id/glassestext"
+                android:layout_marginTop="20sp"/>
+
+               <Button
+                android:id="@+id/notifbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="48sp"
+                android:layout_centerHorizontal="true"
+                android:text="''Notification'' Colour"
+                android:layout_below="@+id/switch_led_movement"
+                android:layout_marginTop="20sp"/>
+            <View
+                android:id="@+id/notifcolour"
+                android:layout_width="match_parent"
+                android:layout_height="48sp"
+                android:layout_centerHorizontal="true"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/switch_led_movement"
+                android:layout_marginLeft="20sp"
+                android:layout_marginTop="20sp" />
+
+            <Button
+                android:id="@+id/leftbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="''Turn Left'' Colour"
+                android:layout_below="@+id/notifbutton"
+                android:layout_marginTop="20sp"/>
+            <View
+                android:id="@+id/leftcolour"
+                android:layout_width="match_parent"
+                android:layout_height="48sp"
+                android:layout_centerHorizontal="true"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/notifbutton"
+                android:layout_marginLeft="20sp"
+                android:layout_marginTop="20sp" />
+
+            <Button
+                android:id="@+id/rightbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="''Turn Right'' Colour"
+                android:layout_below="@+id/leftbutton"
+                android:layout_marginTop="20sp"/>
+            <View
+                android:id="@+id/rightcolour"
+                android:layout_width="match_parent"
+                android:layout_height="48sp"
+                android:layout_centerHorizontal="true"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/leftbutton"
+                android:layout_marginLeft="20sp"
+                android:layout_marginTop="20sp" />
+
+            <Button
+                android:id="@+id/straightbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="''Go Straight'' Colour"
+                android:layout_below="@+id/rightbutton"
+                android:layout_marginTop="20sp"/>
+            <View
+                android:id="@+id/straightcolour"
+                android:layout_width="match_parent"
+                android:layout_height="48sp"
+                android:layout_centerHorizontal="true"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/rightbutton"
+                android:layout_marginLeft="20sp"
+                android:layout_marginTop="20sp" />
+
+            <Button
+                android:id="@+id/turnbutton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="''Wrong Way'' Colour"
+                android:layout_below="@+id/straightbutton"
+                android:layout_marginTop="20sp"/>
+            <View
+                android:id="@+id/turncolour"
+                android:layout_width="match_parent"
+                android:layout_height="48sp"
+                android:layout_centerHorizontal="true"
+                android:background="@color/quantum_grey"
+                android:layout_below="@+id/straightbutton"
+                android:layout_marginLeft="20sp"
+                android:layout_marginTop="20sp" />
+
+            <TextView
+                android:id="@+id/brightnesstext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Brightness level (Furthest Left = Dimmest, Furthest Right = Brightest):"
+                android:layout_marginLeft="20sp"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:textColor="@color/black"
+                android:layout_marginTop="20sp"
+                android:layout_below="@+id/turnbutton"
+                android:textSize="15sp"/>
+
+            <SeekBar
+                android:id="@+id/brightnessSeekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/brightnesstext"
+                android:layout_marginTop="20sp"
+                android:layout_marginBottom="70sp"
+                android:max="6"
+                android:progress="3" />
+
+        </RelativeLayout>
+    </ScrollView>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_above="@id/bottom_menu"
+        android:background="@drawable/button_background">
+
+        <Button
+            android:id="@+id/saveChangesButton"
+            android:layout_width="0sp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Save Changes"
+            android:layout_above="@id/bottom_menu"
+            android:layout_toLeftOf="@+id/resetButton"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="20sp"
+            android:layout_marginBottom="10sp"/>
+
+        <Button
+            android:id="@+id/resetButton"
+            android:layout_width="0sp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Reset and Save"
+            android:layout_above="@id/bottom_menu"
+            android:layout_marginTop="20sp"
+            android:layout_marginBottom="10sp"/>
+    </LinearLayout>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_menu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_alignParentBottom="true"
+        app:backgroundTint="@color/quantum_grey300"
+        app:itemTextColor="@color/black"
+        app:itemIconTint="@color/black"
+        app:menu="@menu/bottom_menu"
+        app:labelVisibilityMode="labeled" />
+
+</RelativeLayout>

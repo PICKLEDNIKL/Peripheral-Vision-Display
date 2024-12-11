@@ -1,42 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:orientation="vertical"
+    tools:context=".HomeActivity">
 
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/autocomplete_fragment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment" />
-
-    <Button
-        android:id="@+id/searchButton"
+    <TextView
+        android:id="@+id/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Confirm Destination"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@id/autocomplete_fragment"/>
+        android:text="Home"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginTop="40sp"
+        android:textSize="30sp"/>
 
     <Button
-        android:id="@+id/clearButton"
+        android:id="@+id/notificationServiceButton"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stop Navigation"
-        android:layout_alignParentRight="true"
-        android:layout_below="@id/autocomplete_fragment"/>
+        android:layout_height="100sp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40sp"
+        android:layout_below="@id/title"
+        android:text="Start Notification Service" />
 
-    <androidx.fragment.app.FragmentContainerView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/map"
-        tools:context=".MapsActivity"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_below="@id/searchButton"
-        android:layout_above="@id/bottom_menu"/>
+    <Button
+        android:id="@+id/locationServiceButton"
+        android:layout_width="wrap_content"
+        android:layout_height="100sp"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:layout_gravity="center"
+        android:layout_marginTop="40sp"
+        android:text="Start Location Service"
+        android:layout_below="@id/notificationServiceButton" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_menu"
@@ -52,4 +53,5 @@
         app:itemIconTint="@color/black"
         app:menu="@menu/bottom_menu"
         app:labelVisibilityMode="labeled" />
+
 </RelativeLayout>
