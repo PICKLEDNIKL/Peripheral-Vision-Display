@@ -27,3 +27,5 @@ Microcontroller Code:
 Settings and Preferences:
     SettingsActivity allows users to configure LED colors for different navigation directions.
     SharedPreferences are used to store user preferences for LED settings and brightness.
+
+Year 3 Final Individual Project
