@@ -3,7 +3,6 @@ package com.example.peripheralvisiondisplay;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -20,25 +19,17 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Base64;
 import android.util.Log;
-
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public class BluetoothLeService extends Service {
-    // TODO: MAKE SURE TO CHANGE ALL OF THE LOGCAT TO USE THIS AS THE TAG AND MAKE THIS IN OTHER CLASSES
-    //todo: blacklist applications so that the notificaitons dont show from that app. maybe check if the notification is being updated. check waht would be a good cutoff for notification from the same app.
-    //todo: stop notificaitons from apps / squash notificaitons from apps.
     private final static String TAG = BluetoothLeService.class.getSimpleName();
     private static final int STATE_CONNECTING = 1;
 
@@ -95,7 +86,6 @@ public class BluetoothLeService extends Service {
                 broadcastUpdate(ACTION_GATT_CONNECTED);
                 updateNotification("Connected to GATT server.");
                 Log.i(TAG, "Connected to GATT server.");
-                // TODO: DISCOVER SERVICES IF I NEED TO???
                 bluetoothGatt.discoverServices();
                 printServiceAndCharacteristicUUIDs();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -121,7 +111,6 @@ public class BluetoothLeService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             if ("com.example.peripheralvisiondisplay.NEW_NOTIFICATION".equals(intent.getAction())) {
-//                Log.d(TAG, "check if duped notifications");
                 queueMessage("NOTIF");
             }
         }
@@ -163,8 +152,6 @@ public class BluetoothLeService extends Service {
         byte[] turnColorBytes = settingConverter("TURN", turnColor);
         byte[] ledMovementBytes = settingConverter("LED", ledMovement ? 1 : 0);
         byte[] brightnessBytes = {(byte) 7, (byte) brightness};
-//        byte[] brightnessBytes = settingConverter("BRIGHT", (byte) brightness);
-
 
         ByteBuffer byteBuffer = ByteBuffer.allocate(12);
         byteBuffer.put(notifColorBytes);
@@ -182,9 +169,6 @@ public class BluetoothLeService extends Service {
         String message = Base64.encodeToString(byteArray, Base64.DEFAULT);
         String message2 = Base64.encodeToString(byteArray2, Base64.DEFAULT);
 
-//        Log.d(TAG, "sendSettingPref: " + notifColor + "," + leftColor + "," + rightColor + "," + straightColor + "," + turnColor + "," + ledMovement);
-
-//        sendMessage(message);
         queueMessage(message);
         queueMessage(message2);
     }
@@ -236,16 +220,13 @@ public class BluetoothLeService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-//        createNotificationChannel();
-        initialize();
 
-        //TODO = NEED TO MAKE IT SO THAT THE SETTINGS GET SENT RIGHT AWAY TO THE DEVICE, probably better to do it when the device is conncted to.
+        initialize();
 
         // Register the receiver
         IntentFilter filter = new IntentFilter();
         filter.addAction("com.example.peripheralvisiondisplay.NEW_NOTIFICATION");
         registerReceiver(notificationReceiver, filter);
-        Log.d(TAG, "onCreate: ble might work");
     }
 
     @Override
@@ -309,9 +290,6 @@ public class BluetoothLeService extends Service {
     }
 
     private void stopService() {
-        // Code to execute when the service is stopped
-//        Log.i(TAG, "Service stopped");
-//        stopSelf();
 
         if (isServiceRunning) {
             stopForeground(true);
