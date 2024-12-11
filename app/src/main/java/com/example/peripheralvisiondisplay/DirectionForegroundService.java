@@ -14,7 +14,6 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 import androidx.core.app.NotificationCompat;
@@ -92,19 +91,19 @@ public class DirectionForegroundService extends Service{
         Intent bleintent = new Intent(this, BluetoothLeService.class);
         bindService(bleintent, serviceConnection, BIND_AUTO_CREATE);
 
-        // TODO: Remove this code after testing.
+
         // For battery testing to send a message every minute to shine all the LEDs.
-        handler = new Handler(Looper.getMainLooper());
-        runnable = new Runnable() {
-            @Override
-            public void run() {
-                if (mBluetoothLeService != null) {
-                    mBluetoothLeService.sendDirectionInfo("You have reached your destination");
-                }
-                handler.postDelayed(this, 30000); // Run every 30 seconds
-            }
-        };
-        handler.post(runnable); // Start the Runnable when the service is created
+//        handler = new Handler(Looper.getMainLooper());
+//        runnable = new Runnable() {
+//            @Override
+//            public void run() {
+//                if (mBluetoothLeService != null) {
+//                    mBluetoothLeService.sendDirectionInfo("You have reached your destination");
+//                }
+//                handler.postDelayed(this, 30000); // Run every 30 seconds
+//            }
+//        };
+//        handler.post(runnable); // Start the Runnable when the service is created
     }
 
     /**
@@ -213,9 +212,8 @@ public class DirectionForegroundService extends Service{
         unregisterReceiver(stepsDataReceiver);
         unbindService(serviceConnection);
 
-        // TODO: Remove this code after testing.
         // For battery testing to stop it when the service is destroyed
-        handler.removeCallbacks(runnable);
+//        handler.removeCallbacks(runnable);
     }
 
     /**
@@ -364,8 +362,7 @@ public class DirectionForegroundService extends Service{
                     firststraightqueue = true;
 
                 // Check if the avg bearing of the user is larger than 90 degrees from the step destination which means the user is walking in the wrong direction.
-                } else if (Math.abs(averageBearing - bearingFromStart) > 90) {
-
+                } else {
                     // The user is not moving in the right direction, send a message to turn
                     if (mBluetoothLeService != null) {
                         mBluetoothLeService.queueMessage("TURN");
